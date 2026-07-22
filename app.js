@@ -3,6 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
+const APP_RELEASE_ID = "v2";
 
 const DEFAULT_MASCOT = "panda";
 const DEFAULT_PALETTE = "panda";
@@ -165,9 +166,35 @@ const el = {
   authConfigWarning: $("authConfigWarning"),
   syncStatus: $("syncStatus"),
   syncStatusText: $("syncStatusText"),
+  updatesButton: $("updatesButton"),
+  updatesUnread: $("updatesUnread"),
+  updatesDialog: $("updatesDialog"),
+  closeUpdates: $("closeUpdates"),
   privacyDialog: $("privacyDialog"),
   termsDialog: $("termsDialog"),
   backupInput: $("backupInput"),
+
+  noteDialog: $("noteDialog"),
+  noteForm: $("noteForm"),
+  noteDate: $("noteDate"),
+  noteText: $("noteText"),
+  noteCounter: $("noteCounter"),
+  noteError: $("noteError"),
+  deleteNote: $("deleteNote"),
+  cancelNote: $("cancelNote"),
+
+  negativeExcuseDialog: $("negativeExcuseDialog"),
+  negativeExcuseForm: $("negativeExcuseForm"),
+  negativeExcuseDate: $("negativeExcuseDate"),
+  negativeExcuseOriginal: $("negativeExcuseOriginal"),
+  negativeExcuseHours: $("negativeExcuseHours"),
+  negativeExcuseMinutes: $("negativeExcuseMinutes"),
+  negativeExcuseReason: $("negativeExcuseReason"),
+  negativeExcuseFull: $("negativeExcuseFull"),
+  negativeExcusePreview: $("negativeExcusePreview"),
+  negativeExcuseError: $("negativeExcuseError"),
+  removeNegativeExcuse: $("removeNegativeExcuse"),
+  cancelNegativeExcuse: $("cancelNegativeExcuse"),
 
   userBadge: $("userBadge"),
   userAvatar: $("userAvatar"),
@@ -330,6 +357,9 @@ let achievementCategoryFilter = "all";
 let lastAppPage = "today";
 let toastTimer = null;
 let calendarCursor = new Date();
+let noteTargetId = null;
+let negativeExcuseTargetId = null;
+let negativeExcuseMaximum = 0;
 
 function accounts() {
   return cloudAccountsCache;
@@ -441,6 +471,7 @@ function createCloudAccount(authUser) {
     paletteIndependent: false,
     salarySettings: { ...DEFAULT_SALARY_SETTINGS },
     achievementState: newAchievementState(),
+    lastSeenRelease: "",
     history: []
   };
 }
@@ -467,6 +498,9 @@ function normalizeCloudAccount(account, authUser) {
   normalized.history = Array.isArray(normalized.history)
     ? normalized.history
     : [];
+  normalized.lastSeenRelease = typeof normalized.lastSeenRelease === "string"
+    ? normalized.lastSeenRelease
+    : "";
 
   if (!normalized.achievementState) {
     normalized.achievementState = newAchievementState(normalized);
@@ -824,6 +858,7 @@ function openApp(code) {
   el.appView.classList.remove("hidden");
 
   updateAccountInterface();
+  updateUpdatesIndicator();
 
   if (!el.date.value) {
     setSelectedDate(yesterday());
@@ -1479,8 +1514,9 @@ function calculateToday() {
   if (!useRealExit) {
     el.todayResultLabel.textContent = "Pode sair a partir de";
     el.todayResultText.textContent =
-      `Você pode sair às ${clock(toleranceExit)} para o dia ser considerado completo. ` +
-      `Para trabalhar 8 horas exatas, saia às ${clock(exactExit)}.`;
+      `Você pode sair às ${clock(toleranceExit)} sem gerar saldo negativo. ` +
+      `Diferenças de até 10 minutos, para menos ou para mais, são consideradas zero. ` +
+      `Para completar 8 horas exatas, saia às ${clock(exactExit)}.`;
     el.todayResultValue.textContent = clock(toleranceExit);
     setResultStatus(el.todayResult, "blue");
     return;
@@ -1509,9 +1545,15 @@ function calculateToday() {
   }
 
   const totalWorked = morning + (realExit - lunchBack);
-  const balance = totalWorked - JOURNEY;
+  const rawBalance = totalWorked - JOURNEY;
+  const balance = toleranceAdjustedBalance(rawBalance);
+
   el.todayTotalWorked.textContent = duration(totalWorked);
-  el.todayBalance.textContent = balance === 0 ? "8h exatas" : duration(balance, true);
+  el.todayBalance.textContent = balance === 0
+    ? rawBalance === 0
+      ? "8h exatas"
+      : "0 min"
+    : duration(balance, true);
 
   if (balance > 0) {
     setMetricStatus(el.todayBalanceMetric, "positive");
@@ -1524,30 +1566,33 @@ function calculateToday() {
     return;
   }
 
-  if (balance === 0) {
-    setMetricStatus(el.todayBalanceMetric, "neutral");
-    el.todayResultLabel.textContent = "Jornada completa";
+  if (balance < 0) {
+    setMetricStatus(el.todayBalanceMetric, "negative");
+    el.todayResultLabel.textContent = "Saldo negativo";
     el.todayResultText.textContent =
-      `Saindo às ${el.todayRealExit.value}, você completou exatamente 8 horas de trabalho.`;
-    el.todayResultValue.textContent = "8h";
-    setResultStatus(el.todayResult, "blue");
+      `Saindo às ${el.todayRealExit.value}, você trabalhou ${duration(totalWorked)}. ` +
+      `Faltaram ${duration(balance)} para completar 8 horas.`;
+    el.todayResultValue.textContent = duration(balance, true);
+    setResultStatus(el.todayResult, "red");
     return;
   }
 
-  const withinTolerance = realExit >= toleranceExit;
-  setMetricStatus(el.todayBalanceMetric, "negative");
-  el.todayResultLabel.textContent = withinTolerance
-    ? "Saldo negativo · dentro da tolerância"
-    : "Saldo negativo";
-  el.todayResultText.textContent = withinTolerance
-    ? `Saindo às ${el.todayRealExit.value}, você trabalhou ${duration(totalWorked)}. ` +
-      `Faltaram ${duration(balance)}, mas o dia fica válido pelos 10 minutos de tolerância.`
-    : `Saindo às ${el.todayRealExit.value}, você trabalhou ${duration(totalWorked)}. ` +
-      `Faltaram ${duration(balance)} para completar 8 horas.`;
-  el.todayResultValue.textContent = duration(balance, true);
-  setResultStatus(el.todayResult, "red");
-}
+  setMetricStatus(el.todayBalanceMetric, "neutral");
+  el.todayResultValue.textContent = rawBalance === 0 ? "8h" : "0 min";
+  setResultStatus(el.todayResult, "blue");
 
+  if (rawBalance === 0) {
+    el.todayResultLabel.textContent = "Jornada completa";
+    el.todayResultText.textContent =
+      `Saindo às ${el.todayRealExit.value}, você completou exatamente 8 horas de trabalho.`;
+    return;
+  }
+
+  el.todayResultLabel.textContent = "Dentro da tolerância";
+  el.todayResultText.textContent =
+    `Você trabalhou ${duration(totalWorked)} e a diferença apurada foi de ${duration(rawBalance, true)}. ` +
+    `Como está dentro do limite de 10 minutos, o saldo considerado é zero.`;
+}
 function extractToday() {
   const parsed = parsePastedText(el.todayPastedText.value);
 
@@ -1708,16 +1753,21 @@ function calculateRecord() {
   const morning = lunchOut - entry;
   const lunchTime = lunchBack - lunchOut;
   const total = morning + (realExit - lunchBack);
-  const balance = specialWorkType
+  const rawBalance = specialWorkType
     ? total
     : total - JOURNEY;
+  const balance = specialWorkType
+    ? rawBalance
+    : toleranceAdjustedBalance(rawBalance);
 
   el.recordTotal.textContent = duration(total);
   el.recordLunchTime.textContent = duration(lunchTime);
   el.recordBalance.textContent = specialWorkType
     ? duration(balance, true)
     : balance === 0
-      ? "8h exatas"
+      ? rawBalance === 0
+        ? "8h exatas"
+        : "0 min"
       : duration(balance, true);
 
   if (specialWorkType) {
@@ -1739,31 +1789,29 @@ function calculateRecord() {
       `${duration(balance)} de hora positiva.`;
     el.recordResultValue.textContent = duration(balance, true);
     setResultStatus(el.recordResult, "green");
-  } else if (balance === 0) {
-    setMetricStatus(el.recordBalanceMetric, "neutral");
-    el.recordResultLabel.textContent = "Jornada completa";
-    el.recordResultText.textContent =
-      `Você completou exatamente 8 horas, saindo às ${el.recordRealExit.value}.`;
-    el.recordResultValue.textContent = "8h";
-    setResultStatus(el.recordResult, "blue");
-  } else {
-    const exactExit = lunchBack + (JOURNEY - morning);
-    const toleranceExit = exactExit - TOLERANCE;
-    const withinTolerance = realExit >= toleranceExit;
-
+  } else if (balance < 0) {
     setMetricStatus(el.recordBalanceMetric, "negative");
-    el.recordResultLabel.textContent = withinTolerance
-      ? "Saldo negativo · dentro da tolerância"
-      : "Saldo negativo";
-
-    el.recordResultText.textContent = withinTolerance
-      ? `Você trabalhou ${duration(total)}. Faltaram ${duration(balance)}, ` +
-        `mas o dia fica válido pela tolerância.`
-      : `Você trabalhou ${duration(total)}. Faltaram ${duration(balance)} ` +
-        `para completar 8 horas.`;
-
+    el.recordResultLabel.textContent = "Saldo negativo";
+    el.recordResultText.textContent =
+      `Você trabalhou ${duration(total)}. Faltaram ${duration(balance)} ` +
+      `para completar 8 horas.`;
     el.recordResultValue.textContent = duration(balance, true);
     setResultStatus(el.recordResult, "red");
+  } else {
+    setMetricStatus(el.recordBalanceMetric, "neutral");
+    el.recordResultValue.textContent = rawBalance === 0 ? "8h" : "0 min";
+    setResultStatus(el.recordResult, "blue");
+
+    if (rawBalance === 0) {
+      el.recordResultLabel.textContent = "Jornada completa";
+      el.recordResultText.textContent =
+        `Você completou exatamente 8 horas, saindo às ${el.recordRealExit.value}.`;
+    } else {
+      el.recordResultLabel.textContent = "Dentro da tolerância";
+      el.recordResultText.textContent =
+        `A diferença apurada foi de ${duration(rawBalance, true)}. ` +
+        `Como está dentro do limite de 10 minutos, o saldo considerado é zero.`;
+    }
   }
 
   lastRecord = {
@@ -1773,13 +1821,12 @@ function calculateRecord() {
     lunchBack: el.recordLunchBack.value,
     realExit: el.recordRealExit.value,
     total,
-    balance,
+    balance: rawBalance,
     specialWorkType
   };
 
   el.saveDay.disabled = false;
 }
-
 function extractRecord() {
   const parsed = parsePastedText(el.recordPastedText.value);
 
@@ -1847,6 +1894,22 @@ function saveDay() {
     );
 
     if (!shouldReplace) return;
+
+    const previous = history[existingIndex];
+    item.note = typeof previous?.note === "string"
+      ? previous.note.slice(0, 500)
+      : "";
+
+    const maximumExcuse = workNegativeBaseMinutes(item);
+    const previousExcuse = negativeExcusedMinutes(previous);
+
+    if (maximumExcuse > 0 && previousExcuse > 0) {
+      item.negativeExcusedMinutes = Math.min(maximumExcuse, previousExcuse);
+      item.negativeExcuseReason = typeof previous?.negativeExcuseReason === "string"
+        ? previous.negativeExcuseReason.slice(0, 120)
+        : "";
+    }
+
     history[existingIndex] = item;
   } else {
     history.push(item);
@@ -1886,6 +1949,39 @@ function recordKind(record) {
   return record?.kind || "work";
 }
 
+function toleranceAdjustedBalance(value) {
+  const balance = finiteNumber(value, 0);
+  return Math.abs(balance) <= TOLERANCE ? 0 : balance;
+}
+
+function rawWorkBalance(record) {
+  return finiteNumber(record?.balance, 0);
+}
+
+function workBalanceBeforeExcuse(record) {
+  if (recordKind(record) !== "work") return 0;
+
+  const raw = rawWorkBalance(record);
+  return record?.specialWorkType
+    ? raw
+    : toleranceAdjustedBalance(raw);
+}
+
+function workNegativeBaseMinutes(record) {
+  const balance = workBalanceBeforeExcuse(record);
+  return balance < 0 ? Math.abs(balance) : 0;
+}
+
+function negativeExcusedMinutes(record) {
+  const maximum = workNegativeBaseMinutes(record);
+  const requested = Math.max(
+    0,
+    Math.round(finiteNumber(record?.negativeExcusedMinutes, 0))
+  );
+
+  return Math.min(maximum, requested);
+}
+
 function effectiveBalance(record) {
   const kind = recordKind(record);
 
@@ -1897,7 +1993,11 @@ function effectiveBalance(record) {
     return record?.absenceExcused === true ? 0 : -JOURNEY;
   }
 
-  return Number(record?.balance || 0);
+  const base = workBalanceBeforeExcuse(record);
+
+  if (base >= 0) return base;
+
+  return base + negativeExcusedMinutes(record);
 }
 
 function monthCalendarCells(monthKey, records) {
@@ -2012,6 +2112,10 @@ function markDayStatus(date, kind) {
   const existingIndex = history.findIndex((record) => record.date === date);
 
   if (existingIndex >= 0) {
+    const previous = history[existingIndex];
+    item.note = typeof previous?.note === "string"
+      ? previous.note.slice(0, 500)
+      : "";
     history[existingIndex] = item;
   } else {
     history.push(item);
@@ -2056,6 +2160,242 @@ function toggleAbsenceExcuse(id) {
       ? "Horas negativas da falta abonadas."
       : "Abono da falta removido."
   );
+}
+
+
+function historyRecordById(id) {
+  const user = accounts()[currentUser];
+  return (user?.history || []).find((record) => record.id === id) || null;
+}
+
+function updateUpdatesIndicator() {
+  const user = accounts()[currentUser];
+  const unread = Boolean(user && user.lastSeenRelease !== APP_RELEASE_ID);
+  el.updatesUnread?.classList.toggle("hidden", !unread);
+  el.updatesButton?.classList.toggle("has-unread", unread);
+}
+
+function openUpdatesDialog() {
+  const allAccounts = accounts();
+  const user = allAccounts[currentUser];
+
+  if (!user) return;
+
+  if (user.lastSeenRelease !== APP_RELEASE_ID) {
+    user.lastSeenRelease = APP_RELEASE_ID;
+    allAccounts[currentUser] = user;
+    saveAccounts(allAccounts);
+  }
+
+  updateUpdatesIndicator();
+  el.updatesDialog.showModal();
+}
+
+function closeUpdatesDialog() {
+  if (el.updatesDialog.open) el.updatesDialog.close();
+}
+
+function updateNoteCounter() {
+  const length = el.noteText.value.length;
+  el.noteCounter.textContent = `${length}/500`;
+}
+
+function openNoteDialog(id) {
+  const record = historyRecordById(id);
+
+  if (!record) {
+    return toast("Registro não encontrado.", "error");
+  }
+
+  noteTargetId = id;
+  el.noteDate.textContent = `${dateBR(record.date)} · ${
+    recordKind(record) === "work"
+      ? "Dia trabalhado"
+      : DAY_STATUS[recordKind(record)]?.label || "Registro"
+  }`;
+  el.noteText.value = typeof record.note === "string"
+    ? record.note.slice(0, 500)
+    : "";
+  el.deleteNote.classList.toggle("hidden", !el.noteText.value.trim());
+  setError(el.noteError);
+  updateNoteCounter();
+  el.noteDialog.showModal();
+
+  requestAnimationFrame(() => el.noteText.focus());
+}
+
+function closeNoteDialog() {
+  noteTargetId = null;
+  if (el.noteDialog.open) el.noteDialog.close();
+}
+
+function saveNote(event) {
+  event.preventDefault();
+
+  const allAccounts = accounts();
+  const user = allAccounts[currentUser];
+  const record = (user?.history || []).find((item) => item.id === noteTargetId);
+
+  if (!record) {
+    setError(el.noteError, "O registro não foi encontrado.");
+    return;
+  }
+
+  const note = el.noteText.value.trim().slice(0, 500);
+
+  if (note) {
+    record.note = note;
+  } else {
+    delete record.note;
+  }
+
+  allAccounts[currentUser] = user;
+  saveAccounts(allAccounts);
+  closeNoteDialog();
+  renderHistory();
+  toast(note ? "Anotação salva." : "Anotação removida.");
+}
+
+function deleteCurrentNote() {
+  if (!noteTargetId) return;
+  if (!confirm("Excluir esta anotação?")) return;
+
+  const allAccounts = accounts();
+  const user = allAccounts[currentUser];
+  const record = (user?.history || []).find((item) => item.id === noteTargetId);
+
+  if (!record) return;
+
+  delete record.note;
+  allAccounts[currentUser] = user;
+  saveAccounts(allAccounts);
+  closeNoteDialog();
+  renderHistory();
+  toast("Anotação excluída.");
+}
+
+function negativeExcuseInputMinutes() {
+  const hours = Math.max(0, Math.floor(finiteNumber(el.negativeExcuseHours.value, 0)));
+  const minutes = Math.max(0, Math.floor(finiteNumber(el.negativeExcuseMinutes.value, 0)));
+  return hours * 60 + minutes;
+}
+
+function setNegativeExcuseInputs(totalMinutes) {
+  const total = Math.max(0, Math.round(totalMinutes));
+  el.negativeExcuseHours.value = String(Math.floor(total / 60));
+  el.negativeExcuseMinutes.value = String(total % 60);
+  updateNegativeExcusePreview();
+}
+
+function updateNegativeExcusePreview() {
+  if (!negativeExcuseTargetId) return;
+
+  const requested = negativeExcuseInputMinutes();
+  const valid = requested <= negativeExcuseMaximum;
+  const considered = Math.max(0, negativeExcuseMaximum - requested);
+
+  el.negativeExcusePreview.textContent = valid
+    ? requested
+      ? `Após o abono, o saldo considerado será ${
+          considered ? duration(-considered, true) : "0 min"
+        }.`
+      : `Sem abono, o saldo considerado permanece ${duration(-negativeExcuseMaximum, true)}.`
+    : `O abono não pode ultrapassar ${duration(negativeExcuseMaximum)}.`;
+
+  el.negativeExcusePreview.classList.toggle("invalid", !valid);
+}
+
+function openNegativeExcuseDialog(id) {
+  const record = historyRecordById(id);
+  const maximum = workNegativeBaseMinutes(record);
+
+  if (!record || maximum <= 0) {
+    return toast("Este dia não possui saldo negativo disponível para abono.", "error");
+  }
+
+  negativeExcuseTargetId = id;
+  negativeExcuseMaximum = maximum;
+  const existing = negativeExcusedMinutes(record);
+
+  el.negativeExcuseDate.textContent = dateBR(record.date);
+  el.negativeExcuseOriginal.textContent = duration(-maximum, true);
+  el.negativeExcuseReason.value = typeof record.negativeExcuseReason === "string"
+    ? record.negativeExcuseReason.slice(0, 120)
+    : "";
+  el.removeNegativeExcuse.classList.toggle("hidden", existing <= 0);
+  setError(el.negativeExcuseError);
+  setNegativeExcuseInputs(existing);
+  el.negativeExcuseDialog.showModal();
+}
+
+function closeNegativeExcuseDialog() {
+  negativeExcuseTargetId = null;
+  negativeExcuseMaximum = 0;
+  if (el.negativeExcuseDialog.open) el.negativeExcuseDialog.close();
+}
+
+function saveNegativeExcuse(event) {
+  event.preventDefault();
+
+  const requested = negativeExcuseInputMinutes();
+
+  if (requested > negativeExcuseMaximum) {
+    setError(
+      el.negativeExcuseError,
+      `O máximo disponível para este dia é ${duration(negativeExcuseMaximum)}.`
+    );
+    return;
+  }
+
+  const allAccounts = accounts();
+  const user = allAccounts[currentUser];
+  const record = (user?.history || []).find(
+    (item) => item.id === negativeExcuseTargetId
+  );
+
+  if (!record || workNegativeBaseMinutes(record) <= 0) {
+    setError(el.negativeExcuseError, "O registro não foi encontrado ou deixou de ser negativo.");
+    return;
+  }
+
+  if (requested > 0) {
+    record.negativeExcusedMinutes = requested;
+    record.negativeExcuseReason = el.negativeExcuseReason.value.trim().slice(0, 120);
+  } else {
+    delete record.negativeExcusedMinutes;
+    delete record.negativeExcuseReason;
+  }
+
+  allAccounts[currentUser] = user;
+  saveAccounts(allAccounts);
+  closeNegativeExcuseDialog();
+  renderHistory();
+  evaluateAchievements({ source: "abono de horas negativas" });
+  renderAchievements();
+  toast(requested > 0 ? "Abono salvo." : "Abono removido.");
+}
+
+function removeNegativeExcuse() {
+  if (!negativeExcuseTargetId) return;
+  if (!confirm("Remover o abono deste dia?")) return;
+
+  const allAccounts = accounts();
+  const user = allAccounts[currentUser];
+  const record = (user?.history || []).find(
+    (item) => item.id === negativeExcuseTargetId
+  );
+
+  if (!record) return;
+
+  delete record.negativeExcusedMinutes;
+  delete record.negativeExcuseReason;
+  allAccounts[currentUser] = user;
+  saveAccounts(allAccounts);
+  closeNegativeExcuseDialog();
+  renderHistory();
+  evaluateAchievements({ source: "remoção de abono" });
+  renderAchievements();
+  toast("Abono removido.");
 }
 
 
@@ -2136,6 +2476,76 @@ function calendarCellClass(item) {
   return "work zero";
 }
 
+function noteButtonHtml(item) {
+  const hasNote = typeof item?.note === "string" && Boolean(item.note.trim());
+  const label = hasNote ? "Abrir anotação deste dia" : "Adicionar anotação neste dia";
+
+  return `
+    <button
+      class="calendar-note ${hasNote ? "active" : ""} tooltip-target"
+      data-id="${item.id}"
+      data-tooltip="${label}."
+      type="button"
+      aria-label="${label}"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 5.5h14v11H9l-4 3v-14Z"/>
+        <path d="M8 9h8M8 12.5h5"/>
+      </svg>
+      <i aria-hidden="true"></i>
+    </button>
+  `;
+}
+
+function negativeExcuseButtonHtml(item) {
+  const maximum = workNegativeBaseMinutes(item);
+
+  if (maximum <= 0) return "";
+
+  const excused = negativeExcusedMinutes(item);
+
+  return `
+    <button
+      class="work-negative-excuse ${excused ? "active" : ""}"
+      data-id="${item.id}"
+      type="button"
+      aria-label="${excused ? "Editar" : "Adicionar"} abono de horas negativas"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3.5 20 7v5c0 4.3-2.8 7.2-8 8.8C6.8 19.2 4 16.3 4 12V7l8-3.5Z"/>
+        <path d="m8.5 12 2.2 2.2 4.8-5"/>
+      </svg>
+      <span>${excused ? "Editar abono" : "Abonar"}</span>
+    </button>
+  `;
+}
+
+function workBalanceAdjustmentHtml(item) {
+  if (item.specialWorkType) return "";
+
+  const raw = rawWorkBalance(item);
+  const beforeExcuse = workBalanceBeforeExcuse(item);
+  const excused = negativeExcusedMinutes(item);
+
+  if (raw !== 0 && beforeExcuse === 0) {
+    return `
+      <small class="calendar-adjustment tolerance-applied">
+        Saldo apurado ${duration(raw, true)} · tolerância aplicada
+      </small>
+    `;
+  }
+
+  if (excused > 0) {
+    return `
+      <small class="calendar-adjustment excused-applied">
+        Saldo apurado ${duration(beforeExcuse, true)} · ${duration(excused)} abonados
+      </small>
+    `;
+  }
+
+  return "";
+}
+
 function calendarWorkCell(item) {
   const balance = effectiveBalance(item);
   const balanceClass = balance > 0
@@ -2168,6 +2578,8 @@ function calendarWorkCell(item) {
             : ""
         }
 
+        ${workBalanceAdjustmentHtml(item)}
+
         <small class="calendar-times">
           ${item.entry}–${item.lunchOut}<br />
           ${item.lunchBack}–${item.realExit}
@@ -2175,6 +2587,8 @@ function calendarWorkCell(item) {
       </div>
 
       <footer class="calendar-cell-actions">
+        ${negativeExcuseButtonHtml(item)}
+        ${noteButtonHtml(item)}
         <button
           class="calendar-delete tooltip-target"
           data-id="${item.id}"
@@ -2193,7 +2607,6 @@ function calendarWorkCell(item) {
     </article>
   `;
 }
-
 function calendarStatusCell(item) {
   const kind = recordKind(item);
   const status = DAY_STATUS[kind];
@@ -2257,20 +2670,23 @@ function calendarStatusCell(item) {
       <footer class="calendar-cell-actions vertical">
         ${absenceButton}
         ${addSpecialWorkButton}
-        <button
-          class="calendar-delete tooltip-target"
-          data-id="${item.id}"
-          data-tooltip="Excluir esse registro."
-          type="button"
-          aria-label="Excluir esse registro"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 7h16"/>
-            <path d="M9 7V4h6v3"/>
-            <path d="m6 7 1 13h10l1-13"/>
-            <path d="M10 11v5M14 11v5"/>
-          </svg>
-        </button>
+        <div class="calendar-icon-actions">
+          ${noteButtonHtml(item)}
+          <button
+            class="calendar-delete tooltip-target"
+            data-id="${item.id}"
+            data-tooltip="Excluir esse registro."
+            type="button"
+            aria-label="Excluir esse registro"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16"/>
+              <path d="M9 7V4h6v3"/>
+              <path d="m6 7 1 13h10l1-13"/>
+              <path d="M10 11v5M14 11v5"/>
+            </svg>
+          </button>
+        </div>
       </footer>
     </article>
   `;
@@ -2819,6 +3235,23 @@ function renderHistory() {
       });
     });
 
+  el.historyList
+    .querySelectorAll(".calendar-note")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        hideFloatingTooltip();
+        openNoteDialog(button.dataset.id);
+      });
+    });
+
+  el.historyList
+    .querySelectorAll(".work-negative-excuse")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        openNegativeExcuseDialog(button.dataset.id);
+      });
+    });
+
   bindFloatingTooltips(el.historyList);
 
   el.historyList
@@ -2957,7 +3390,7 @@ function exportBackup() {
 
   const payload = {
     app: "Calculadora de Jornada FB",
-    version: 29,
+    version: 2,
     exportedAt: new Date().toISOString(),
     account: user
   };
@@ -3065,7 +3498,7 @@ const ACHIEVEMENTS = [
   { id:"relogio-suico", code:"RS", category:"jornada", name:"Relógio suíço", description:"Complete a jornada em 10 dias consecutivos." },
   { id:"na-medida", code:"NM", category:"jornada", name:"Na medida", description:"Termine um dia com exatamente 8 horas trabalhadas." },
   { id:"precisao-cirurgica", code:"PC", category:"jornada", name:"Precisão cirúrgica", description:"Termine 5 dias com saldo entre −1 e +1 minuto." },
-  { id:"tolerancia-estrategia", code:"TE", category:"jornada", name:"Tolerância é estratégia", description:"Termine um dia usando exatamente os 10 minutos de tolerância." },
+  { id:"tolerancia-estrategia", code:"TE", category:"jornada", name:"Tolerância é estratégia", description:"Termine um dia com exatamente 10 minutos de diferença, para menos ou para mais." },
   { id:"semana-redonda", code:"SR", category:"jornada", name:"Semana redonda", description:"Feche uma semana inteira sem horas negativas." },
   { id:"mes-perfeito", code:"MP", category:"jornada", name:"Mês perfeito", description:"Finalize um mês completo com saldo líquido exatamente zerado." },
   { id:"sem-sustos", code:"SS", category:"jornada", name:"Sem sustos", description:"Passe um mês completo sem nenhum dia abaixo da tolerância." },
@@ -3713,7 +4146,7 @@ function achievementResult(id, context, unlockedWithoutFinal = 0) {
       return progress(c.preciseDays >= 5, c.preciseDays, 5);
     case "tolerancia-estrategia":
       return progress(c.normalWork.some(
-        (record) => effectiveBalance(record) === -TOLERANCE
+        (record) => Math.abs(rawWorkBalance(record)) === TOLERANCE
       ));
     case "semana-redonda":
       return progress(c.hasRoundWeek);
@@ -5450,6 +5883,32 @@ function renderCalendar() {
 
 el.googleLogin.addEventListener("click", signInWithGoogle);
 el.logout.onclick = logout;
+
+el.updatesButton.addEventListener("click", openUpdatesDialog);
+el.closeUpdates.addEventListener("click", closeUpdatesDialog);
+el.updatesDialog.addEventListener("click", (event) => {
+  if (event.target === el.updatesDialog) closeUpdatesDialog();
+});
+
+el.noteForm.addEventListener("submit", saveNote);
+el.noteText.addEventListener("input", updateNoteCounter);
+el.cancelNote.addEventListener("click", closeNoteDialog);
+el.deleteNote.addEventListener("click", deleteCurrentNote);
+el.noteDialog.addEventListener("click", (event) => {
+  if (event.target === el.noteDialog) closeNoteDialog();
+});
+
+el.negativeExcuseForm.addEventListener("submit", saveNegativeExcuse);
+el.negativeExcuseHours.addEventListener("input", updateNegativeExcusePreview);
+el.negativeExcuseMinutes.addEventListener("input", updateNegativeExcusePreview);
+el.negativeExcuseFull.addEventListener("click", () => {
+  setNegativeExcuseInputs(negativeExcuseMaximum);
+});
+el.removeNegativeExcuse.addEventListener("click", removeNegativeExcuse);
+el.cancelNegativeExcuse.addEventListener("click", closeNegativeExcuseDialog);
+el.negativeExcuseDialog.addEventListener("click", (event) => {
+  if (event.target === el.negativeExcuseDialog) closeNegativeExcuseDialog();
+});
 
 document.querySelectorAll(".openPrivacyNotice").forEach((button) => {
   button.addEventListener("click", () => el.privacyDialog.showModal());

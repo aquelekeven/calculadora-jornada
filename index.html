@@ -118,6 +118,24 @@
           </div>
         </div>
         <div class="header-actions">
+          <button
+            id="updatesButton"
+            class="updates-button"
+            type="button"
+            aria-label="Abrir últimas novidades"
+            title="Últimas novidades"
+          >
+            <span class="updates-button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 13.5V10l11-4v11l-11-3.5Z"/>
+                <path d="M7 14.5 8.5 20h3L10 15.5"/>
+                <path d="M18 8.5 20 7M18 12h3M18 15.5l2 1.5"/>
+              </svg>
+            </span>
+            <span class="updates-button-label">Novidades</span>
+            <span id="updatesUnread" class="updates-unread hidden" aria-hidden="true"></span>
+          </button>
+
           <div class="profile-account-group">
             <div id="userBadge" class="account-chip">
               <span id="userAvatar" class="profile-avatar small" aria-hidden="true"></span>
@@ -853,6 +871,141 @@
       </footer>
     </section>
   </main>
+
+  <dialog id="updatesDialog" class="updates-dialog" aria-labelledby="updatesTitle">
+    <div class="dialog-body updates-dialog-body">
+      <header class="updates-dialog-head">
+        <div>
+          <p class="eyebrow">Últimas novidades</p>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2</h2>
+        </div>
+        <span class="release-pill">V2</span>
+      </header>
+
+      <section class="release-note featured">
+        <span class="release-note-icon" aria-hidden="true">±</span>
+        <div>
+          <strong>Tolerância para menos e para mais</strong>
+          <p>
+            Diferenças de até 10 minutos, negativas ou positivas, agora são zeradas.
+            Ao passar do limite, o saldo completo do dia é contabilizado.
+          </p>
+        </div>
+      </section>
+
+      <section class="release-note">
+        <span class="release-note-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3.5 20 7v5c0 4.3-2.8 7.2-8 8.8C6.8 19.2 4 16.3 4 12V7l8-3.5Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>
+        </span>
+        <div>
+          <strong>Abono em dias negativos</strong>
+          <p>Abone todo o saldo negativo ou apenas uma parte e registre um motivo opcional.</p>
+        </div>
+      </section>
+
+      <section class="release-note">
+        <span class="release-note-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 5.5h14v11H9l-4 3v-14Z"/><path d="M8 9h8M8 12.5h5"/></svg>
+        </span>
+        <div>
+          <strong>Anotações por dia</strong>
+          <p>Salve comentários pessoais em dias trabalhados, feriados, atestados e faltas.</p>
+        </div>
+      </section>
+
+      <section class="release-note">
+        <span class="release-note-icon" aria-hidden="true">✦</span>
+        <div>
+          <strong>Central de novidades</strong>
+          <p>Este botão avisará sempre que uma nova versão trouxer mudanças importantes.</p>
+        </div>
+      </section>
+
+      <button id="closeUpdates" class="btn primary" type="button">Entendi</button>
+    </div>
+  </dialog>
+
+  <dialog id="noteDialog" class="feature-dialog" aria-labelledby="noteTitle">
+    <form id="noteForm" class="dialog-body">
+      <div>
+        <p class="eyebrow">Anotação pessoal</p>
+        <h2 id="noteTitle">Comentário do dia</h2>
+        <p id="noteDate" class="muted dialog-date-line">—</p>
+      </div>
+
+      <label for="noteText">
+        Comentário
+        <textarea
+          id="noteText"
+          maxlength="500"
+          rows="6"
+          placeholder="Ex.: Fiquei até mais tarde por causa de uma gravação externa."
+        ></textarea>
+      </label>
+
+      <div class="dialog-field-footer">
+        <span>Somente você verá esta anotação na sua conta.</span>
+        <span id="noteCounter">0/500</span>
+      </div>
+
+      <p id="noteError" class="status error hidden"></p>
+
+      <div class="dialog-actions feature-dialog-actions">
+        <button id="deleteNote" class="btn secondary danger-text hidden" type="button">Excluir anotação</button>
+        <button id="cancelNote" class="btn secondary" type="button">Cancelar</button>
+        <button class="btn primary" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="negativeExcuseDialog" class="feature-dialog" aria-labelledby="negativeExcuseTitle">
+    <form id="negativeExcuseForm" class="dialog-body">
+      <div>
+        <p class="eyebrow">Abono de horas negativas</p>
+        <h2 id="negativeExcuseTitle">Ajustar saldo considerado</h2>
+        <p id="negativeExcuseDate" class="muted dialog-date-line">—</p>
+      </div>
+
+      <div class="negative-excuse-summary">
+        <span>Saldo negativo apurado</span>
+        <strong id="negativeExcuseOriginal">—</strong>
+      </div>
+
+      <div class="duration-fields">
+        <label for="negativeExcuseHours">
+          Horas abonadas
+          <input id="negativeExcuseHours" type="number" min="0" step="1" inputmode="numeric" value="0" />
+        </label>
+        <label for="negativeExcuseMinutes">
+          Minutos
+          <input id="negativeExcuseMinutes" type="number" min="0" max="59" step="1" inputmode="numeric" value="0" />
+        </label>
+      </div>
+
+      <button id="negativeExcuseFull" class="btn secondary small full-width-action" type="button">
+        Abonar o saldo negativo inteiro
+      </button>
+
+      <label for="negativeExcuseReason">
+        Motivo <span class="optional-label">opcional</span>
+        <input
+          id="negativeExcuseReason"
+          maxlength="120"
+          autocomplete="off"
+          placeholder="Ex.: Consulta médica"
+        />
+      </label>
+
+      <p id="negativeExcusePreview" class="negative-excuse-preview"></p>
+      <p id="negativeExcuseError" class="status error hidden"></p>
+
+      <div class="dialog-actions feature-dialog-actions">
+        <button id="removeNegativeExcuse" class="btn secondary danger-text hidden" type="button">Remover abono</button>
+        <button id="cancelNegativeExcuse" class="btn secondary" type="button">Cancelar</button>
+        <button class="btn primary" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="calendarDialog" class="calendar-dialog" aria-labelledby="calendarTitle">
     <div class="calendar-shell">
