@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta id="themeColor" name="theme-color" content="#f5f5f7" />
+  <title>Calculadora de Jornada FB</title>
+  <link id="appFavicon" rel="icon" href="icone-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <script>
+    (() => {
+      const saved = localStorage.getItem("jfb_theme_v1");
+      const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.dataset.theme = saved || preferred;
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <main class="shell">
+    <section id="authView" class="auth-wrap cloud-auth-view">
+      <div class="brand-row">
+        <header class="brand">
+          <span class="brand-calculator-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <rect x="13" y="7" width="38" height="50" rx="8"/>
+              <rect x="20" y="15" width="24" height="10" rx="2"/>
+              <path d="M20 34h4M30 34h4M40 34h4"/>
+              <path d="M20 43h4M30 43h4M40 43h4"/>
+              <path d="M20 51h4M30 51h4M40 51h4"/>
+            </svg>
+          </span>
+          <div>
+            <h1>Calculadora de Jornada</h1>
+            <p>Seus registros sincronizados com sua conta Google.</p>
+          </div>
+        </header>
+
+        <button class="icon-btn theme-toggle" type="button" aria-label="Alternar tema" title="Alternar tema">
+          <svg class="theme-icon icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 15.4A8.5 8.5 0 0 1 8.6 3.7 8.5 8.5 0 1 0 20.3 15.4Z"/></svg>
+          <svg class="theme-icon icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+      </div>
+
+      <section class="card auth-card cloud-auth-card">
+        <div class="unofficial-auth-badge">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 20 7v5c0 4.3-2.8 7.2-8 8.8C6.8 19.2 4 16.3 4 12V7l8-3.5Z"/><path d="M12 8v4M12 15.7h.01"/></svg>
+          <span>Projeto independente e não oficial</span>
+        </div>
+
+        <div class="cloud-auth-copy">
+          <p class="eyebrow">Acesso seguro</p>
+          <h2>Entre com sua conta Google</h2>
+          <p class="muted">
+            No primeiro acesso, sua conta do aplicativo é criada automaticamente.
+            Depois, o mesmo login recupera seus registros em outros dispositivos.
+          </p>
+        </div>
+
+        <button id="googleLogin" class="google-login-button" type="button">
+          <span class="google-login-mark" aria-hidden="true">G</span>
+          <span>Continuar com Google</span>
+        </button>
+
+        <div id="authLoading" class="auth-loading hidden" role="status" aria-live="polite">
+          <span class="auth-spinner" aria-hidden="true"></span>
+          <span id="authLoadingText">Verificando sua sessão…</span>
+        </div>
+
+        <p id="authConfigWarning" class="status error auth-config-warning hidden"></p>
+
+        <aside class="privacy-safety-card">
+          <div class="privacy-safety-icon" aria-hidden="true">!</div>
+          <div>
+            <strong>Use somente para organização pessoal</strong>
+            <p>
+              Não informe CPF, RG, endereço, dados bancários, documentos ou qualquer
+              informação pessoal desnecessária. Este aplicativo não substitui ponto,
+              folha de pagamento, orientação do RH ou qualquer sistema oficial.
+            </p>
+          </div>
+        </aside>
+
+        <p class="auth-consent">
+          Ao continuar, você declara estar ciente dos
+          <button class="text-action openTermsNotice" type="button">Termos de uso</button>
+          e do
+          <button class="text-action openPrivacyNotice" type="button">Aviso de privacidade</button>.
+        </p>
+      </section>
+
+      <button id="installAuth" class="btn secondary full hidden" type="button">Instalar aplicativo</button>
+
+      <footer class="footer disclaimer-footer">
+        <strong>Feito por Keven, Rei da IA.</strong>
+        <em>Projeto independente, sem vínculo institucional.</em>
+      </footer>
+    </section>
+
+    <section id="appView" class="hidden">
+      <header class="app-header">
+        <div class="brand compact-brand">
+          <span class="brand-calculator-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64">
+              <rect x="13" y="7" width="38" height="50" rx="8"/>
+              <rect x="20" y="15" width="24" height="10" rx="2"/>
+              <path d="M20 34h4M30 34h4M40 34h4"/>
+              <path d="M20 43h4M30 43h4M40 43h4"/>
+              <path d="M20 51h4M30 51h4M40 51h4"/>
+            </svg>
+          </span>
+          <div>
+            <h1>Calculadora de Jornada</h1>
+            <p>Calcule a saída de hoje ou registre dias anteriores.</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="profile-account-group">
+            <div id="userBadge" class="account-chip">
+              <span id="userAvatar" class="profile-avatar small" aria-hidden="true"></span>
+              <span id="userBadgeText"></span>
+            </div>
+
+            <button
+              id="tabAccount"
+              class="account-access-button"
+              type="button"
+              aria-label="Abrir Minha conta"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="3.5"/>
+                <path d="M5.5 20c.7-4 3-6 6.5-6s5.8 2 6.5 6"/>
+              </svg>
+              <span>Minha conta</span>
+            </button>
+          </div>
+
+          <span id="syncStatus" class="sync-status" data-state="connecting" title="Estado da sincronização">
+            <i aria-hidden="true"></i>
+            <span id="syncStatusText">Conectando…</span>
+          </span>
+
+<button class="icon-btn theme-toggle" type="button" aria-label="Alternar tema" title="Alternar tema">
+            <svg class="theme-icon icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 15.4A8.5 8.5 0 0 1 8.6 3.7 8.5 8.5 0 1 0 20.3 15.4Z"/></svg>
+            <svg class="theme-icon icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.41M17.66 6.34l1.41-1.41"/></svg>
+          </button>
+          <button id="installApp" class="btn secondary small hidden" type="button">Instalar</button>
+          <button id="logout" class="btn secondary small" type="button">Sair</button>
+        </div>
+      </header>
+
+      <aside class="global-unofficial-notice">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 20 7v5c0 4.3-2.8 7.2-8 8.8C6.8 19.2 4 16.3 4 12V7l8-3.5Z"/><path d="M12 8v4M12 15.7h.01"/></svg>
+        <p>
+          <strong>Ferramenta independente e não oficial.</strong>
+          Não use como comprovante de jornada e não registre documentos ou dados pessoais desnecessários.
+        </p>
+        <button class="text-action openPrivacyNotice" type="button">Saiba mais</button>
+      </aside>
+
+      <div id="navigationRow" class="navigation-row">
+      <nav id="mainNavigation" class="main-navigation" aria-label="Áreas principais do aplicativo">
+        <button id="tabToday" class="main-nav-item active" type="button">
+          <span class="main-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="8.5"/>
+              <path d="M12 7.5V12l3 2"/>
+            </svg>
+          </span>
+          <span>Hora de sair</span>
+        </button>
+
+        <button id="tabRecord" class="main-nav-item" type="button">
+          <span class="main-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="4" y="5.5" width="16" height="14" rx="2.5"/>
+              <path d="M8 3.5v4M16 3.5v4M4 9.5h16M12 12v5M9.5 14.5h5"/>
+            </svg>
+          </span>
+          <span>Registrar dia</span>
+        </button>
+
+        <button id="tabHistory" class="main-nav-item" type="button">
+          <span class="main-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="4" y="4.5" width="16" height="15.5" rx="2.5"/>
+              <path d="M8 2.8v3.4M16 2.8v3.4M4 8.5h16"/>
+              <path d="M8 12h2M14 12h2M8 16h2M14 16h2"/>
+            </svg>
+          </span>
+          <span>Histórico</span>
+        </button>
+      </nav>
+
+      <div class="stats-navigation-quadrant">
+        <button
+          id="statsButton"
+          class="stats-nav-button stats-launcher"
+          type="button"
+          aria-label="Abrir Dados inúteis"
+          aria-pressed="false"
+          title="Dados inúteis"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path class="stats-star-main" d="m12 2 1.25 4.25L17.5 7.5l-4.25 1.25L12 13l-1.25-4.25L6.5 7.5l4.25-1.25L12 2Z"/>
+            <path class="stats-star-small stats-star-right" d="m18.5 13 .75 2.25L21.5 16l-2.25.75L18.5 19l-.75-2.25L15.5 16l2.25-.75L18.5 13Z"/>
+            <path class="stats-star-small stats-star-left" d="m6 14 .85 2.65L9.5 17.5l-2.65.85L6 21l-.85-2.65-2.65-.85 2.65-.85L6 14Z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="achievement-navigation-quadrant">
+        <button
+          id="achievementsButton"
+          class="achievement-nav-button medal-launcher"
+          type="button"
+          aria-label="Abrir Medalhas"
+          aria-pressed="false"
+          title="Medalhas"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path class="medal-top" d="M7 3h4l1 5H8L7 3Zm6 0h4l-1 5h-4l1-5Z"/>
+            <circle class="medal-core" cx="12" cy="15" r="4.5"/>
+            <path class="medal-star" d="m12 12.4.8 1.65 1.82.26-1.31 1.27.31 1.79L12 16.5l-1.62.87.31-1.79-1.31-1.27 1.82-.26.8-1.65Z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+      <section id="todayPanel">
+        <section class="card block">
+          <p class="eyebrow">Dia atual</p>
+          <h2>Que horas posso sair?</h2>
+          <p class="muted section-description">
+            Informe os três primeiros horários do dia. Esta tela serve somente para calcular sua saída e não salva nada no histórico.
+          </p>
+        </section>
+
+        <section class="card block">
+          <p class="eyebrow">Preenchimento rápido</p>
+          <h2>Colar horários de hoje</h2>
+          <div class="paste-row">
+            <label>
+              Texto do ponto
+              <textarea id="todayPastedText" placeholder="Ex.: 11:56 - 13:23 - 18:30"></textarea>
+            </label>
+            <button id="parseTodayText" class="btn primary paste-btn" type="button">Preencher horários</button>
+          </div>
+          <p class="hint">Informe exatamente três horários: entrada, saída para almoço e volta do almoço.</p>
+          <p id="todayParseStatus" class="status hidden"></p>
+        </section>
+
+        <section class="card block">
+          <p class="eyebrow">Horários de hoje</p>
+          <h2>Jornada atual</h2>
+          <div class="grid three">
+            <label>Entrada<input id="todayEntry" type="time" /></label>
+            <label>Saída para almoço<input id="todayLunchOut" type="time" /></label>
+            <label>Volta do almoço<input id="todayLunchBack" type="time" /></label>
+          </div>
+
+          <label class="switch-row today-real-switch" for="todayUseRealExit">
+            <span>
+              <strong>Informar saída real</strong>
+              <small>Ative caso você saia antes ou depois do horário calculado.</small>
+            </span>
+            <span class="switch" aria-hidden="true">
+              <input id="todayUseRealExit" type="checkbox" />
+              <span class="track"><span class="thumb"></span></span>
+            </span>
+          </label>
+
+          <div id="todayRealExitBlock" class="real-exit hidden">
+            <label>Saída real<input id="todayRealExit" type="time" /></label>
+          </div>
+        </section>
+
+        <section class="metrics">
+          <article class="metric">
+            <span>Trabalhado antes do almoço</span>
+            <strong id="todayMorning">—</strong>
+          </article>
+          <article class="metric">
+            <span>Saída exata para 8 horas</span>
+            <strong id="todayExactExit">—</strong>
+          </article>
+          <article class="metric">
+            <span>Pode sair a partir de</span>
+            <strong id="todayToleranceExit">—</strong>
+            <small>Com 10 minutos de tolerância</small>
+          </article>
+        </section>
+
+        <section id="todayRealMetrics" class="metrics today-real-metrics hidden">
+          <article class="metric">
+            <span>Total trabalhado</span>
+            <strong id="todayTotalWorked">—</strong>
+          </article>
+          <article id="todayBalanceMetric" class="metric neutral">
+            <span>Saldo do dia</span>
+            <strong id="todayBalance">—</strong>
+          </article>
+        </section>
+
+        <section id="todayResult" class="card result blue">
+          <div>
+            <p id="todayResultLabel" class="eyebrow">Horário de saída</p>
+            <p id="todayResultText">Preencha os três horários para calcular.</p>
+          </div>
+          <strong id="todayResultValue">—</strong>
+        </section>
+
+        <div class="actions">
+          <button id="clearToday" class="btn secondary" type="button">Limpar horários</button>
+        </div>
+        <p id="todayError" class="status error hidden"></p>
+      </section>
+
+      <section id="recordPanel" class="hidden">
+        <section class="card block">
+          <p class="eyebrow">Histórico</p>
+          <h2>Registrar um dia trabalhado</h2>
+          <p class="muted section-description">
+            Use esta tela para lançar ontem ou qualquer outro dia já concluído. Aqui a saída real é obrigatória.
+          </p>
+        </section>
+
+        <section class="card block">
+          <p class="eyebrow">Preenchimento rápido</p>
+          <h2>Colar registro completo</h2>
+          <div class="paste-row">
+            <label>
+              Texto do ponto
+              <textarea id="recordPastedText" placeholder="Ex.: 11:09 - 11:40	12:58 - 18:43"></textarea>
+            </label>
+            <button id="parseRecordText" class="btn primary paste-btn" type="button">Preencher registro</button>
+          </div>
+          <p class="hint">Escolha a data no calendário e cole exatamente quatro horários: entrada, saída para almoço, volta do almoço e saída real. Espaços e tabulações são aceitos.</p>
+          <p id="recordParseStatus" class="status hidden"></p>
+        </section>
+
+        <section class="card block">
+          <p class="eyebrow">Registro do dia</p>
+          <h2>Data e horários</h2>
+          <div class="grid five">
+            <div class="field-group">
+              <span class="field-label">Data</span>
+              <button id="datePickerButton" class="date-input" type="button" aria-haspopup="dialog">
+                <span id="dateDisplay">Selecionar data</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="3"/>
+                  <path d="M7 3v4M17 3v4M3 10h18"/>
+                </svg>
+              </button>
+              <input id="date" type="hidden" />
+            </div>
+            <label>Entrada<input id="recordEntry" type="time" /></label>
+            <label>Saída para almoço<input id="recordLunchOut" type="time" /></label>
+            <label>Volta do almoço<input id="recordLunchBack" type="time" /></label>
+            <label>Saída real<input id="recordRealExit" type="time" /></label>
+          </div>
+        </section>
+
+        <section class="metrics">
+          <article class="metric">
+            <span>Total trabalhado</span>
+            <strong id="recordTotal">—</strong>
+          </article>
+          <article class="metric">
+            <span>Tempo de almoço</span>
+            <strong id="recordLunchTime">—</strong>
+          </article>
+          <article id="recordBalanceMetric" class="metric neutral">
+            <span>Saldo do dia</span>
+            <strong id="recordBalance">—</strong>
+          </article>
+        </section>
+
+        <section id="recordResult" class="card result blue">
+          <div>
+            <p id="recordResultLabel" class="eyebrow">Registro do dia</p>
+            <p id="recordResultText">Preencha a data e os quatro horários.</p>
+          </div>
+          <strong id="recordResultValue">—</strong>
+        </section>
+
+        <div class="actions">
+          <button id="saveDay" class="btn primary" type="button" disabled>Salvar dia no histórico</button>
+          <button id="clearRecord" class="btn secondary" type="button">Limpar registro</button>
+        </div>
+        <p id="recordError" class="status error hidden"></p>
+      </section>
+
+      <section id="historyPanel" class="hidden">
+        <section class="metrics">
+          <article class="metric"><span>Dias registrados</span><strong id="daysCount">0</strong></article>
+          <article id="balanceMetric" class="metric neutral"><span>Saldo líquido</span><strong id="totalBalance">0 min</strong></article>
+          <article class="metric"><span>Último registro</span><strong id="lastDate">—</strong></article>
+        </section>
+
+        <section class="card block">
+          <div class="history-head">
+            <div>
+              <p class="eyebrow">Registros salvos</p>
+              <h2>Calendário mensal</h2>
+            </div>
+          </div>
+          <div id="emptyHistory" class="empty">
+            <strong>Nenhum dia salvo ainda.</strong>
+            <p>Abra “Registrar dia” para salvar seu primeiro registro.</p>
+          </div>
+          <div id="historyList" class="history-list hidden"></div>
+        </section>
+      </section>
+
+      <section id="statsPanel" class="stats-page hidden">
+        <div id="statsPageTop" class="stats-page-topbar">
+          <button id="statsBackHome" class="stats-back-home" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m10 6-6 6 6 6"/>
+              <path d="M4 12h16"/>
+            </svg>
+            <span>Voltar ao início</span>
+          </button>
+        </div>
+
+        <section class="card stats-hero">
+          <div>
+            <p class="eyebrow">Dados inúteis</p>
+            <h2>Estatísticas absolutamente desnecessárias sobre a sua jornada.</h2>
+            <p class="muted">
+              O relatório que absolutamente ninguém solicitou — mas que, estranhamente,
+              você vai querer consultar.
+            </p>
+          </div>
+
+          <div class="stats-hero-art" aria-hidden="true">
+            <svg viewBox="0 0 80 80">
+              <path d="M40 8 45 27l19 5-19 5-5 19-5-19-19-5 19-5 5-19Z"/>
+              <path d="m62 48 2.5 9.5L74 60l-9.5 2.5L62 72l-2.5-9.5L50 60l9.5-2.5L62 48Z"/>
+              <path d="m18 48 2 7 7 2-7 2-2 7-2-7-7-2 7-2 2-7Z"/>
+            </svg>
+          </div>
+        </section>
+
+        <nav id="statsViewTabs" class="stats-view-tabs" aria-label="Conteúdo de Dados inúteis">
+          <button
+            class="stats-view-button active"
+            data-stats-view="dashboard"
+            type="button"
+            aria-pressed="true"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>
+            </svg>
+            <span>Estatísticas</span>
+          </button>
+
+          <button
+            class="stats-view-button"
+            data-stats-view="achievements"
+            type="button"
+            aria-pressed="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/>
+              <path d="M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4M12 13v4M8 20h8M9 17h6"/>
+            </svg>
+            <span>Medalhas</span>
+            <strong id="achievementNavCount" class="stats-view-count">0</strong>
+          </button>
+        </nav>
+
+        <div id="statsDashboardView">
+          <nav id="statsPeriodTabs" class="stats-period-tabs" aria-label="Período das estatísticas">
+          <button class="stats-period-button active" data-period="month" type="button">Este mês</button>
+          <button class="stats-period-button" data-period="year" type="button">Este ano</button>
+          <button class="stats-period-button" data-period="all" type="button">Desde o primeiro registro</button>
+        </nav>
+
+        <section id="statsEmpty" class="card stats-empty hidden">
+          <div class="stats-empty-icon" aria-hidden="true">?</div>
+          <h2>Ainda não temos material para fofocar.</h2>
+          <p>Registre algum dia trabalhado nesse período para liberar as estatísticas inúteis.</p>
+        </section>
+
+        <div id="statsContent">
+          <section class="stats-total-grid">
+            <article class="card stats-total-card">
+              <span id="statsPeriodLabel" class="stats-card-kicker">Este mês</span>
+              <strong id="statsTotalWorked">0 min</strong>
+              <p>de tempo total trabalhando</p>
+            </article>
+
+            <article class="card stats-equivalent-card">
+              <span>Dias completos de 8 horas</span>
+              <strong id="statsEquivalentDays">0</strong>
+              <small>Isso não significa que você descansou nos outros.</small>
+            </article>
+
+            <article class="card stats-equivalent-card">
+              <span>Semanas de 40 horas</span>
+              <strong id="statsEquivalentWeeks">0</strong>
+              <small>Matematicamente. Emocionalmente é outra história.</small>
+            </article>
+
+            <article class="card stats-equivalent-card">
+              <span>Dias com trabalho registrado</span>
+              <strong id="statsWorkedDays">0</strong>
+              <small id="statsAveragePerDay">Média de 0 min por dia</small>
+            </article>
+          </section>
+
+          <section class="card stats-section">
+            <header class="stats-section-head">
+              <div>
+                <p class="eyebrow">O RH não pediu</p>
+                <h2>Seus recordes</h2>
+              </div>
+              <span class="stats-section-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/>
+                  <path d="M8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4M12 13v4M8 20h8M9 17h6"/>
+                </svg>
+              </span>
+            </header>
+            <div id="statsRecords" class="stats-records-grid"></div>
+          </section>
+
+          <section class="card stats-section">
+            <header class="stats-section-head">
+              <div>
+                <p class="eyebrow">Padrões questionáveis</p>
+                <h2>Seus hábitos</h2>
+              </div>
+              <span class="stats-section-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>
+                </svg>
+              </span>
+            </header>
+            <div id="statsHabits" class="stats-habits-grid"></div>
+          </section>
+
+          <section class="card stats-section stats-comparisons-section">
+            <header class="stats-section-head">
+              <div>
+                <p class="eyebrow">Ciência de procedência duvidosa</p>
+                <h2>Comparações completamente inúteis</h2>
+              </div>
+              <span class="stats-section-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M9 4h6M10 4v5l-5 8a2 2 0 0 0 1.7 3h10.6A2 2 0 0 0 19 17l-5-8V4"/>
+                  <path d="M8 15h8"/>
+                </svg>
+              </span>
+            </header>
+            <div id="statsComparisons" class="stats-comparisons-grid"></div>
+          </section>
+
+        </div>
+        </div>
+
+        <div class="stats-bottom-actions">
+          <button id="statsScrollTop" class="stats-scroll-top" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 10 6-6 6 6"/>
+              <path d="M12 4v16"/>
+            </svg>
+            <span>Subir ao topo</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="achievementsPanel" class="achievements-page hidden">
+        <div id="achievementsPageTop" class="stats-page-topbar">
+          <button id="achievementsBackHome" class="stats-back-home achievement-back-home" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m10 6-6 6 6 6"/>
+              <path d="M4 12h16"/>
+            </svg>
+            <span>Voltar ao início</span>
+          </button>
+        </div>
+
+        <section id="achievementsView" class="achievements-view">
+          <section class="card achievement-overview">
+            <div class="achievement-overview-copy">
+              <p class="eyebrow">Álbum de conquistas</p>
+              <h2>Medalhas completamente necessárias.</h2>
+              <p class="muted">
+                Algumas são úteis, outras são preocupantes e as secretas se recusam
+                a explicar o que querem.
+              </p>
+            </div>
+
+            <div class="achievement-progress-ring" aria-hidden="true">
+              <div>
+                <strong id="achievementUnlockedCount">0</strong>
+                <span>de <b id="achievementTotalCount">0</b></span>
+              </div>
+            </div>
+
+            <div class="achievement-progress-copy">
+              <strong id="achievementProgressTitle">Nenhuma desbloqueada ainda</strong>
+              <span id="achievementProgressText">Continue registrando sua jornada.</span>
+              <div class="achievement-progress-track">
+                <i id="achievementProgressBar"></i>
+              </div>
+            </div>
+          </section>
+
+          <section class="card achievements-album">
+            <header class="achievements-album-head">
+              <div>
+                <p class="eyebrow">Coleção</p>
+                <h2>Suas medalhas</h2>
+              </div>
+
+              <label class="achievement-category-control">
+                Categoria
+                <select id="achievementCategoryFilter">
+                  <option value="all">Todas as categorias</option>
+                  <option value="jornada">Pontualidade e jornada</option>
+                  <option value="saldo">Saldo e compensação</option>
+                  <option value="horarios">Horários curiosos</option>
+                  <option value="almoco">Almoço</option>
+                  <option value="frequencia">Sequências e frequência</option>
+                  <option value="especiais">Fim de semana e feriado</option>
+                  <option value="ocorrencias">Justificativas e ocorrências</option>
+                  <option value="app">Uso do aplicativo</option>
+                  <option value="secretas">Secretas</option>
+                </select>
+              </label>
+            </header>
+
+            <nav id="achievementFilters" class="achievement-filters" aria-label="Filtro de medalhas">
+              <button class="achievement-filter active" data-achievement-filter="all" type="button">Todas</button>
+              <button class="achievement-filter" data-achievement-filter="unlocked" type="button">Conquistadas</button>
+              <button class="achievement-filter" data-achievement-filter="locked" type="button">Bloqueadas</button>
+              <button class="achievement-filter" data-achievement-filter="secret" type="button">Secretas</button>
+            </nav>
+
+            <div id="achievementGrid" class="achievement-category-list"></div>
+          </section>
+        </section>
+
+
+        <div class="stats-bottom-actions">
+          <button id="achievementsScrollTop" class="stats-scroll-top achievement-scroll-top" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 10 6-6 6 6"/>
+              <path d="M12 4v16"/>
+            </svg>
+            <span>Subir ao topo</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="accountPanel" class="hidden">
+        <section class="card block account-hero">
+          <div id="accountAvatar" class="profile-avatar large" aria-hidden="true"></div>
+          <div>
+            <p class="eyebrow">Minha conta</p>
+            <h2 id="accountName">—</h2>
+            <p id="accountCode" class="muted account-code">Conta Google</p>
+          </div>
+        </section>
+
+        <section class="card block">
+          <p class="eyebrow">Foto de perfil</p>
+          <h2>Escolha seu mascote</h2>
+          <p class="muted section-description">
+            São três personagens padrões em estilo de ilustração. O desenho escolhido aparece corretamente no cabeçalho e na sua conta.
+          </p>
+          <div id="mascotGrid" class="mascot-grid" aria-label="Escolha de mascote"></div>
+
+          <div class="palette-settings">
+            <label class="switch-row palette-switch" for="paletteIndependent">
+              <span>
+                <strong>Usar paleta independente do mascote</strong>
+                <small>Ative para trocar as cores do aplicativo sem trocar o personagem.</small>
+              </span>
+              <span class="switch">
+                <input id="paletteIndependent" type="checkbox" />
+                <span class="track"><span class="thumb"></span></span>
+              </span>
+            </label>
+
+            <div class="palette-picker-head">
+              <div>
+                <p class="eyebrow">Cores do aplicativo</p>
+                <h3>Escolha uma paleta</h3>
+              </div>
+              <span id="paletteLinkStatus" class="palette-status"></span>
+            </div>
+            <div id="paletteGrid" class="palette-grid" aria-label="Escolha de paleta"></div>
+          </div>
+        </section>
+
+        <section class="card block salary-settings-card">
+          <div class="salary-settings-head">
+            <div>
+              <p class="eyebrow">Cálculo financeiro</p>
+              <h2>Estimativa do valor das horas</h2>
+              <p class="muted section-description">
+                Preencha somente os dados principais. Não é necessário copiar o holerite inteiro.
+              </p>
+            </div>
+
+            <label class="switch-row compact-switch" for="salaryEstimateEnabled">
+              <span>
+                <strong>Ativar estimativa</strong>
+                <small>Exibe valores aproximados no histórico mensal.</small>
+              </span>
+              <span class="switch" aria-hidden="true">
+                <input id="salaryEstimateEnabled" type="checkbox" />
+                <span class="track"><span class="thumb"></span></span>
+              </span>
+            </label>
+          </div>
+
+          <fieldset id="salaryFields" class="salary-fields" disabled>
+            <div class="grid two">
+              <label>
+                Salário-base mensal
+                <div class="money-input">
+                  <span>R$</span>
+                  <input
+                    id="salaryBase"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    placeholder="Ex.: 1.234,56"
+                  />
+                </div>
+              </label>
+
+              <label>
+                Divisor mensal
+                <input
+                  id="salaryDivisor"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="400"
+                  step="1"
+                  value="200"
+                />
+                <span class="hint">Ex.: 200 para jornada semanal de 40 horas.</span>
+              </label>
+            </div>
+
+            <div class="grid two">
+              <label>
+                Adicional em dias úteis
+                <div class="suffix-input">
+                  <input
+                    id="salaryWeekdayPremium"
+                    type="number"
+                    inputmode="decimal"
+                    min="0"
+                    max="300"
+                    step="0.01"
+                    value="50"
+                  />
+                  <span>%</span>
+                </div>
+              </label>
+
+              <label>
+                Adicional em fins de semana e feriados
+                <div class="suffix-input">
+                  <input
+                    id="salarySpecialPremium"
+                    type="number"
+                    inputmode="decimal"
+                    min="0"
+                    max="300"
+                    step="0.01"
+                    value="100"
+                  />
+                  <span>%</span>
+                </div>
+              </label>
+            </div>
+
+            <label class="switch-row salary-negative-switch" for="salaryEstimateNegative">
+              <span>
+                <strong>Estimar possível desconto das horas negativas</strong>
+                <small>Usa o valor da hora normal, sem adicional.</small>
+              </span>
+              <span class="switch" aria-hidden="true">
+                <input id="salaryEstimateNegative" type="checkbox" checked />
+                <span class="track"><span class="thumb"></span></span>
+              </span>
+            </label>
+
+            <div class="salary-preview" aria-live="polite">
+              <article>
+                <span>Hora normal</span>
+                <strong id="salaryNormalHour">—</strong>
+              </article>
+              <article>
+                <span>Hora extra em dia útil</span>
+                <strong id="salaryWeekdayHour">—</strong>
+              </article>
+              <article>
+                <span>Hora em fim de semana/feriado</span>
+                <strong id="salarySpecialHour">—</strong>
+              </article>
+            </div>
+          </fieldset>
+
+          <aside class="salary-disclaimer">
+            <strong>Valores estimados</strong>
+            <p>
+              Esta ferramenta apresenta uma referência bruta e pode não coincidir com a folha de pagamento.
+              Não considera fechamento da folha, banco de horas, convenção coletiva, reflexos, DSR,
+              adicional noturno, INSS, IRRF, FGTS, arredondamentos ou outras verbas e descontos.
+              Confirme as regras e os valores oficiais com o RH.
+            </p>
+          </aside>
+        </section>
+
+        <section class="card block">
+          <p class="eyebrow">Dados e segurança</p>
+          <h2>Gerenciar conta</h2>
+          <p class="muted section-description">
+            Seus registros ficam associados à sua conta Google e sincronizados no banco de dados.
+            O backup continua disponível como cópia pessoal adicional.
+          </p>
+          <div class="account-actions">
+            <button id="exportBackup" class="btn secondary" type="button">Exportar backup</button>
+            <button class="btn secondary importBackup" type="button">Importar backup</button>
+            <button id="openDeleteAccount" class="btn danger" type="button">Apagar conta</button>
+          </div>
+          <p class="hint">
+            Apagar a conta remove definitivamente os dados deste aplicativo. Sua conta Google não será apagada.
+          </p>
+        </section>
+      </section>
+
+      <footer class="footer disclaimer-footer">
+        <strong>Feito por Keven, Rei da IA.</strong>
+        <em>Projeto independente e não oficial. Não substitui os sistemas da instituição.</em>
+        <span>
+          <button class="text-action openTermsNotice" type="button">Termos</button>
+          <button class="text-action openPrivacyNotice" type="button">Privacidade</button>
+        </span>
+      </footer>
+    </section>
+  </main>
+
+  <dialog id="calendarDialog" class="calendar-dialog" aria-labelledby="calendarTitle">
+    <div class="calendar-shell">
+      <header class="calendar-head">
+        <button id="calendarPrev" class="icon-btn" type="button" aria-label="Mês anterior">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <h2 id="calendarTitle"></h2>
+        <button id="calendarNext" class="icon-btn" type="button" aria-label="Próximo mês">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </header>
+      <div class="calendar-weekdays" aria-hidden="true">
+        <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+      </div>
+      <div id="calendarGrid" class="calendar-grid"></div>
+      <footer class="calendar-actions">
+        <button id="calendarCancel" class="btn secondary small" type="button">Cancelar</button>
+        <button id="calendarToday" class="btn primary small" type="button">Hoje</button>
+      </footer>
+    </div>
+  </dialog>
+  <dialog id="deleteAccountDialog" aria-labelledby="deleteAccountTitle">
+    <form id="deleteAccountForm" class="dialog-body">
+      <div class="danger-icon" aria-hidden="true">!</div>
+      <p class="eyebrow danger-text">Ação irreversível</p>
+      <h2 id="deleteAccountTitle">Apagar sua conta e todos os registros?</h2>
+      <p class="muted">
+        Todos os dados deste aplicativo serão apagados do banco, incluindo histórico,
+        preferências, estimativas e medalhas. Sua conta Google continuará existindo normalmente.
+      </p>
+
+      <div class="danger-summary">
+        <span>Conta conectada</span>
+        <strong id="deleteAccountCode"></strong>
+      </div>
+
+      <label>
+        Para confirmar, digite APAGAR
+        <input id="deleteAccountConfirm" autocomplete="off" placeholder="APAGAR" required />
+      </label>
+
+      <p id="deleteAccountError" class="status error hidden"></p>
+
+      <div class="dialog-actions">
+        <button id="cancelDeleteAccount" class="btn secondary" type="button">Cancelar</button>
+        <button class="btn danger" type="submit">Apagar definitivamente</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <dialog id="privacyDialog" class="legal-dialog" aria-labelledby="privacyTitle">
+    <div class="dialog-body legal-dialog-body">
+      <p class="eyebrow">Privacidade</p>
+      <h2 id="privacyTitle">Aviso de privacidade</h2>
+      <p>
+        A autenticação é feita pelo Google por meio do Supabase. O aplicativo utiliza o
+        identificador da conta, nome e e-mail para reconhecer o usuário e associa a esse
+        identificador os horários, preferências, estatísticas e medalhas registrados.
+      </p>
+      <p>
+        Não envie CPF, RG, endereço, dados bancários, documentos, informações médicas ou
+        qualquer dado que não seja necessário ao controle pessoal da jornada. Os dados podem
+        ser excluídos em <strong>Minha conta → Apagar conta</strong>.
+      </p>
+      <p>
+        O navegador pode manter uma cópia técnica local para permitir continuidade durante
+        falhas temporárias de conexão. Ao sair da conta, essa cópia é removida deste dispositivo.
+      </p>
+      <button class="btn primary closePrivacyNotice" type="button">Entendi</button>
+    </div>
+  </dialog>
+
+  <dialog id="termsDialog" class="legal-dialog" aria-labelledby="termsTitle">
+    <div class="dialog-body legal-dialog-body">
+      <p class="eyebrow">Uso responsável</p>
+      <h2 id="termsTitle">Termos de uso</h2>
+      <p>
+        Esta é uma ferramenta independente para organização pessoal, sem vínculo com a Fundação
+        ou com qualquer empregador. Os cálculos são estimativas e não constituem registro oficial,
+        comprovante de ponto, folha de pagamento, orientação trabalhista ou comunicação com o RH.
+      </p>
+      <p>
+        O usuário é responsável por conferir horários, regras internas e valores oficiais. O
+        aplicativo pode sofrer alterações e não oferece garantia de disponibilidade contínua.
+      </p>
+      <button class="btn primary closeTermsNotice" type="button">Entendi</button>
+    </div>
+  </dialog>
+
+  <input id="backupInput" class="hidden" type="file" accept=".json,application/json" />
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
