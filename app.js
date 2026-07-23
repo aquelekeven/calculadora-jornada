@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.3";
+const APP_RELEASE_ID = "v2.4";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -257,6 +257,18 @@ const el = {
   rankingDialogStatus: $("rankingDialogStatus"),
   rankingDialogList: $("rankingDialogList"),
   rankingDialogParticipation: $("rankingDialogParticipation"),
+  profileRankAnchor: $("profileRankAnchor"),
+  profileRankCard: $("profileRankCard"),
+  profileRankDot: $("profileRankDot"),
+  profileRankTitle: $("profileRankTitle"),
+  profileRankMeta: $("profileRankMeta"),
+  accountRankingCard: $("accountRankingCard"),
+  accountRankingBadge: $("accountRankingBadge"),
+  accountRankPosition: $("accountRankPosition"),
+  accountRankTitle: $("accountRankTitle"),
+  accountRankMedals: $("accountRankMedals"),
+  accountRankStatus: $("accountRankStatus"),
+  accountRankingParticipation: $("accountRankingParticipation"),
   closeRanking: $("closeRanking"),
   privacyDialog: $("privacyDialog"),
   termsDialog: $("termsDialog"),
@@ -1363,6 +1375,7 @@ function updateAccountInterface() {
   renderMascotPicker();
   renderPalettePicker();
   loadSalarySettings(user);
+  renderPersonalRankingSummary();
 }
 
 function selectMascot(mascotId) {
@@ -2364,6 +2377,138 @@ function escapeRankingText(value) {
   })[character]);
 }
 
+const RANK_TIER_CLASSES = [
+  "rank-tier-diamond",
+  "rank-tier-gold",
+  "rank-tier-bronze",
+  "rank-tier-common",
+  "rank-tier-hidden"
+];
+
+function rankTierForPosition(position) {
+  const numericPosition = Number(position);
+
+  if (numericPosition === 1) {
+    return { key: "diamond", title: "CLT Pro Max", icon: "💎" };
+  }
+
+  if (numericPosition === 2) {
+    return { key: "gold", title: "CLT Premium", icon: "🥇" };
+  }
+
+  if (numericPosition === 3) {
+    return { key: "bronze", title: "CLT Dedicado", icon: "🥉" };
+  }
+
+  return { key: "common", title: "CLT Comum", icon: "●" };
+}
+
+function applyRankTierClass(target, tierKey = "common") {
+  if (!target) return;
+  target.classList.remove(...RANK_TIER_CLASSES);
+  target.classList.add(`rank-tier-${tierKey}`);
+}
+
+function currentRankingRow() {
+  return medalRankingRows.find((row) => row.isCurrentUser) || null;
+}
+
+function localMedalCount() {
+  const user = accounts()[currentUser];
+  return achievementUnlockedCount(user?.achievementState || {});
+}
+
+function personalRankingSummary() {
+  const current = currentRankingRow();
+  const medalCount = current?.medalCount ?? localMedalCount();
+
+  if (medalRankingLoading && !medalRankingAvailable && !medalRankingRows.length) {
+    return {
+      tier: { key: "common", title: "Carregando…", icon: "…" },
+      position: "—",
+      medalCount,
+      shortTitle: "Carregando seu rank…",
+      status: "Buscando sua colocação na Liga CLT."
+    };
+  }
+
+  if (!medalRankingParticipates) {
+    return {
+      tier: { key: "hidden", title: "Fora do ranking", icon: "○" },
+      position: "—",
+      medalCount,
+      shortTitle: "Fora do ranking",
+      status: "Você está oculto para os demais, mas continua vendo a classificação."
+    };
+  }
+
+  if (current) {
+    const tier = rankTierForPosition(current.position);
+    return {
+      tier,
+      position: `${current.position}º lugar`,
+      medalCount,
+      shortTitle: `${current.position}º lugar · ${tier.title}`,
+      status: "Sua posição acompanha automaticamente a quantidade de medalhas conquistadas."
+    };
+  }
+
+  if (medalRankingError) {
+    return {
+      tier: { key: "common", title: "Rank indisponível", icon: "!" },
+      position: "—",
+      medalCount,
+      shortTitle: "Rank indisponível",
+      status: medalRankingError
+    };
+  }
+
+  return {
+    tier: { key: "common", title: "CLT Comum", icon: "●" },
+    position: "Aguardando",
+    medalCount,
+    shortTitle: "Aguardando colocação",
+    status: "Seu perfil está sendo incluído no ranking."
+  };
+}
+
+function renderPersonalRankingSummary() {
+  const summary = personalRankingSummary();
+  const medalLabel = summary.medalCount === 1 ? "medalha" : "medalhas";
+
+  applyRankTierClass(el.profileRankCard, summary.tier.key);
+  applyRankTierClass(el.accountRankingCard, summary.tier.key);
+  applyRankTierClass(el.profileRankDot, summary.tier.key);
+
+  if (el.profileRankTitle) el.profileRankTitle.textContent = summary.shortTitle;
+  if (el.profileRankMeta) {
+    el.profileRankMeta.textContent = `${summary.medalCount} ${medalLabel}`;
+  }
+
+  if (el.accountRankingBadge) {
+    el.accountRankingBadge.textContent = `${summary.tier.icon} ${summary.tier.title}`;
+  }
+  if (el.accountRankPosition) el.accountRankPosition.textContent = summary.position;
+  if (el.accountRankTitle) el.accountRankTitle.textContent = summary.tier.title;
+  if (el.accountRankMedals) el.accountRankMedals.textContent = String(summary.medalCount);
+  if (el.accountRankStatus) el.accountRankStatus.textContent = summary.status;
+
+  if (el.accountRankingParticipation) {
+    el.accountRankingParticipation.textContent = medalRankingParticipates
+      ? "Não quero participar"
+      : "Participar novamente";
+    el.accountRankingParticipation.disabled = medalRankingLoading || !medalRankingAvailable;
+    el.accountRankingParticipation.classList.toggle("rejoin", !medalRankingParticipates);
+  }
+}
+
+function setProfileRankPopover(open) {
+  if (!el.profileRankAnchor || !el.profileRankCard) return;
+  el.profileRankAnchor.classList.toggle("is-open", open);
+  el.profileRankAnchor.setAttribute("aria-expanded", open ? "true" : "false");
+  el.profileRankCard.setAttribute("aria-hidden", open ? "false" : "true");
+}
+
 function normalizeRankingRow(row) {
   return {
     position: Math.max(1, Number(row?.position) || 1),
@@ -2375,16 +2520,21 @@ function normalizeRankingRow(row) {
 
 function rankingRowMarkup(row, options = {}) {
   const medalLabel = row.medalCount === 1 ? "medalha" : "medalhas";
+  const tier = rankTierForPosition(row.position);
   const currentLabel = row.isCurrentUser
     ? '<small class="ranking-you-label">você</small>'
     : "";
   const separated = options.separated ? " ranking-row-separated" : "";
+  const safeName = escapeRankingText(row.displayName);
 
   return `
-    <li class="ranking-row ${row.isCurrentUser ? "current-user" : ""}${separated}">
+    <li class="ranking-row rank-tier-${tier.key} ${row.isCurrentUser ? "current-user" : ""}${separated}">
       <span class="ranking-position">${row.position}º</span>
       <span class="ranking-person">
-        <strong>${escapeRankingText(row.displayName)}</strong>
+        <span class="ranking-person-copy">
+          <strong class="ranking-name" data-rank-name="${safeName}">${safeName}</strong>
+          <small class="ranking-title">${tier.icon} ${tier.title}</small>
+        </span>
         ${currentLabel}
       </span>
       <span class="ranking-medals">
@@ -2438,7 +2588,7 @@ function renderMedalRanking() {
     target.classList.toggle("error", Boolean(medalRankingError));
   });
 
-  [el.rankingDockParticipation, el.rankingDialogParticipation].forEach((button) => {
+  [el.rankingDockParticipation, el.rankingDialogParticipation, el.accountRankingParticipation].forEach((button) => {
     if (!button) return;
     button.textContent = toggleText;
     button.disabled = controlsDisabled;
@@ -2454,6 +2604,7 @@ function renderMedalRanking() {
 
     if (el.rankingDockList) el.rankingDockList.innerHTML = empty;
     if (el.rankingDialogList) el.rankingDialogList.innerHTML = empty;
+    renderPersonalRankingSummary();
     return;
   }
 
@@ -2477,6 +2628,8 @@ function renderMedalRanking() {
       })
       .join("");
   }
+
+  renderPersonalRankingSummary();
 }
 
 function scheduleMedalRankingRefresh(delay = 350) {
@@ -6303,6 +6456,23 @@ el.rankingDockOpen?.addEventListener("click", openRankingDialog);
 el.closeRanking?.addEventListener("click", closeRankingDialog);
 el.rankingDockParticipation?.addEventListener("click", toggleMedalRankingParticipation);
 el.rankingDialogParticipation?.addEventListener("click", toggleMedalRankingParticipation);
+el.accountRankingParticipation?.addEventListener("click", toggleMedalRankingParticipation);
+
+el.profileRankAnchor?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  setProfileRankPopover(!el.profileRankAnchor.classList.contains("is-open"));
+});
+el.profileRankAnchor?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    setProfileRankPopover(!el.profileRankAnchor.classList.contains("is-open"));
+  }
+  if (event.key === "Escape") setProfileRankPopover(false);
+});
+document.addEventListener("click", (event) => {
+  if (!el.profileRankAnchor?.contains(event.target)) setProfileRankPopover(false);
+});
+
 el.rankingDialog?.addEventListener("click", (event) => {
   if (event.target === el.rankingDialog) closeRankingDialog();
 });

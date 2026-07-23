@@ -156,7 +156,23 @@
 
           <div class="profile-account-group">
             <div id="userBadge" class="account-chip">
-              <span id="userAvatar" class="profile-avatar small" aria-hidden="true"></span>
+              <span
+                id="profileRankAnchor"
+                class="profile-rank-anchor"
+                role="button"
+                tabindex="0"
+                aria-label="Ver resumo do seu ranking"
+                aria-controls="profileRankCard"
+                aria-expanded="false"
+              >
+                <span id="userAvatar" class="profile-avatar small" aria-hidden="true"></span>
+                <span id="profileRankDot" class="profile-rank-dot" aria-hidden="true"></span>
+                <aside id="profileRankCard" class="profile-rank-popover rank-tier-common" aria-hidden="true">
+                  <small>Seu ranking</small>
+                  <strong id="profileRankTitle">Carregando…</strong>
+                  <span id="profileRankMeta">Buscando suas medalhas</span>
+                </aside>
+              </span>
               <span id="userBadgeText"></span>
             </div>
 
@@ -201,7 +217,7 @@
       <aside id="rankingDock" class="ranking-dock hidden" aria-label="Ranking de medalhas">
         <header class="ranking-dock-head">
           <div>
-            <span class="ranking-kicker">🏆 Medalhas</span>
+            <span class="ranking-kicker">🏆 Liga CLT</span>
             <strong>Ranking</strong>
           </div>
           <button id="rankingDockOpen" class="ranking-expand-button" type="button">Ver Top 10</button>
@@ -750,6 +766,39 @@
           </div>
         </section>
 
+        <section id="accountRankingCard" class="card block account-ranking-card rank-tier-common">
+          <header class="account-ranking-head">
+            <div>
+              <p class="eyebrow">Liga CLT</p>
+              <h2>Seu desempenho no ranking</h2>
+            </div>
+            <span id="accountRankingBadge" class="account-ranking-badge">CLT Comum</span>
+          </header>
+
+          <div class="account-ranking-grid">
+            <article>
+              <small>Posição</small>
+              <strong id="accountRankPosition">—</strong>
+            </article>
+            <article>
+              <small>Título</small>
+              <strong id="accountRankTitle">Carregando…</strong>
+            </article>
+            <article>
+              <small>Medalhas</small>
+              <strong id="accountRankMedals">0</strong>
+            </article>
+          </div>
+
+          <p id="accountRankStatus" class="muted account-ranking-status">
+            Buscando sua colocação…
+          </p>
+
+          <button id="accountRankingParticipation" class="btn secondary account-ranking-action" type="button" disabled>
+            Não quero participar
+          </button>
+        </section>
+
         <section class="card block">
           <p class="eyebrow">Foto de perfil</p>
           <h2>Escolha seu mascote</h2>
@@ -939,38 +988,40 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.3</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.4</h2>
         </div>
-        <span class="release-pill">V2.3</span>
+        <span class="release-pill">V2.4</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">🏆</span>
+        <span class="release-note-icon" aria-hidden="true">💎</span>
         <div>
-          <strong>Ranking de medalhas</strong>
+          <strong>Cargos da Liga CLT</strong>
           <p>
-            Veja os usuários com mais medalhas usando apenas o primeiro nome e a inicial do sobrenome.
-            Seus horários, comentários e demais registros continuam privados.
+            O primeiro colocado agora é CLT Pro Max, o segundo é CLT Premium,
+            o terceiro é CLT Dedicado e, do quarto em diante, CLT Comum.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">10</span>
+        <span class="release-note-icon" aria-hidden="true">✦</span>
         <div>
-          <strong>Top 10 e sua posição</strong>
+          <strong>Cores e brilho por colocação</strong>
           <p>
-            O ranking mostra os dez primeiros e também sua própria colocação quando você estiver fora do Top 10.
+            Diamante, ouro, bronze e cinza identificam cada nível, com uma animação
+            discreta no nome dos participantes.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">○</span>
+        <span class="release-note-icon" aria-hidden="true">👤</span>
         <div>
-          <strong>Participação sob seu controle</strong>
+          <strong>Seu rank sempre à mão</strong>
           <p>
-            Todos entram automaticamente, mas você pode se ocultar a qualquer momento e continuar acompanhando o ranking.
+            Passe o mouse ou toque na foto do perfil para ver um resumo. A área Minha conta
+            também exibe sua posição, título e quantidade de medalhas.
           </p>
         </div>
       </section>
@@ -984,7 +1035,7 @@
       <header class="ranking-dialog-head">
         <div>
           <p class="eyebrow">Competição totalmente desnecessária</p>
-          <h2 id="rankingTitle">Ranking de medalhas</h2>
+          <h2 id="rankingTitle">Ranking da Liga CLT</h2>
         </div>
         <span class="ranking-trophy" aria-hidden="true">🏆</span>
       </header>
