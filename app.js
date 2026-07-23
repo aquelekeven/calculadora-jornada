@@ -257,6 +257,17 @@ const el = {
   rankingDialogStatus: $("rankingDialogStatus"),
   rankingDialogList: $("rankingDialogList"),
   rankingDialogParticipation: $("rankingDialogParticipation"),
+  openCupPreview: $("openCupPreview"),
+  cupResultDialog: $("cupResultDialog"),
+  cupConfetti: $("cupConfetti"),
+  cupResultPeriod: $("cupResultPeriod"),
+  cupBoardPeriod: $("cupBoardPeriod"),
+  cupPodium: $("cupPodium"),
+  cupResultList: $("cupResultList"),
+  cupMyResult: $("cupMyResult"),
+  closeCupResultTop: $("closeCupResultTop"),
+  closeCupResult: $("closeCupResult"),
+  cupBackToRanking: $("cupBackToRanking"),
   profileRankAnchor: $("profileRankAnchor"),
   profileRankCard: $("profileRankCard"),
   profileRankDot: $("profileRankDot"),
@@ -2686,6 +2697,180 @@ function openRankingDialog() {
 
 function closeRankingDialog() {
   if (el.rankingDialog?.open) el.rankingDialog.close();
+}
+
+const CUP_PREVIEW_POINTS = [92, 85, 78, 70, 64, 58, 53, 48, 44, 40];
+
+function cupPreviewMonthLabel() {
+  const now = new Date();
+  return new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric"
+  }).format(now).replace(/^./, (character) => character.toUpperCase());
+}
+
+function cupPreviewInitials(name) {
+  const words = String(name || "Usuário")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) return "U";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+}
+
+function cupPreviewFallbackRows() {
+  const user = accounts()[currentUser];
+  const ownName = displayName(user);
+  const names = [ownName, "Gabriel H.", "Bárbara S.", "Participante 4", "Participante 5"];
+
+  return names.map((name, index) => ({
+    position: index + 1,
+    displayName: name,
+    medalCount: Math.max(0, 37 - index * 4),
+    isCurrentUser: index === 0
+  }));
+}
+
+function cupPreviewRows() {
+  const source = medalRankingRows.length
+    ? medalRankingRows.slice(0, 10)
+    : cupPreviewFallbackRows();
+
+  return source.map((row, index) => ({
+    ...row,
+    position: index + 1,
+    previewPoints: CUP_PREVIEW_POINTS[index] ?? Math.max(12, 40 - index * 3)
+  }));
+}
+
+function cupPreviewAvatarMarkup(row) {
+  const safeName = escapeRankingText(row.displayName);
+
+  if (row.isCurrentUser) {
+    const user = accounts()[currentUser];
+    if (user) {
+      return `<span class="cup-avatar cup-avatar-mascot" title="${safeName}">${mascotMarkup(ensureMascot(user))}</span>`;
+    }
+  }
+
+  const safeInitials = escapeRankingText(cupPreviewInitials(row.displayName));
+  return `<span class="cup-avatar cup-avatar-initials" title="${safeName}">${safeInitials}</span>`;
+}
+
+function cupPodiumMarkup(row) {
+  if (!row) return "";
+  const tier = rankTierForPosition(row.position);
+  const safeName = escapeRankingText(row.displayName);
+
+  return `
+    <article class="cup-podium-place cup-podium-place-${row.position} rank-tier-${tier.key}">
+      <div class="cup-podium-avatar-wrap">
+        ${cupPreviewAvatarMarkup(row)}
+        <span class="cup-podium-number">${row.position}</span>
+      </div>
+      <div class="cup-podium-copy">
+        <strong>${safeName}</strong>
+        <small>${tier.icon} ${tier.title}</small>
+        <span>${row.previewPoints} pts</span>
+      </div>
+      <div class="cup-pedestal" aria-hidden="true"></div>
+    </article>
+  `;
+}
+
+function cupResultRowMarkup(row) {
+  const tier = rankTierForPosition(row.position);
+  const safeName = escapeRankingText(row.displayName);
+  const currentLabel = row.isCurrentUser ? '<small class="cup-result-you">você</small>' : "";
+
+  return `
+    <li class="cup-result-row rank-tier-${tier.key} ${row.isCurrentUser ? "current-user" : ""}">
+      <span class="cup-result-position">${row.position}</span>
+      <span class="cup-result-person">
+        ${cupPreviewAvatarMarkup(row)}
+        <span>
+          <strong>${safeName}</strong>
+          <small>${tier.icon} ${tier.title}</small>
+        </span>
+        ${currentLabel}
+      </span>
+      <strong class="cup-result-points">${row.previewPoints}<small>pts</small></strong>
+    </li>
+  `;
+}
+
+function renderCupPreview() {
+  const rows = cupPreviewRows();
+  const period = cupPreviewMonthLabel();
+  const topOne = rows.find((row) => row.position === 1) || rows[0];
+  const topTwo = rows.find((row) => row.position === 2) || rows[1];
+  const topThree = rows.find((row) => row.position === 3) || rows[2];
+
+  if (el.cupResultPeriod) el.cupResultPeriod.textContent = period;
+  if (el.cupBoardPeriod) el.cupBoardPeriod.textContent = period;
+
+  if (el.cupPodium) {
+    el.cupPodium.innerHTML = [topTwo, topOne, topThree]
+      .filter(Boolean)
+      .map(cupPodiumMarkup)
+      .join("");
+  }
+
+  if (el.cupResultList) {
+    el.cupResultList.innerHTML = rows
+      .slice(0, 10)
+      .map(cupResultRowMarkup)
+      .join("");
+  }
+
+  const own = rows.find((row) => row.isCurrentUser);
+  if (el.cupMyResult) {
+    if (own && own.position > 3) {
+      const tier = rankTierForPosition(own.position);
+      applyRankTierClass(el.cupMyResult, tier.key);
+      el.cupMyResult.innerHTML = `
+        <span>Sua colocação nesta prévia</span>
+        <strong>${own.position}º lugar · ${tier.title}</strong>
+        <small>${own.previewPoints} pontos simulados</small>
+      `;
+      el.cupMyResult.classList.remove("hidden");
+    } else {
+      el.cupMyResult.classList.add("hidden");
+      el.cupMyResult.innerHTML = "";
+    }
+  }
+}
+
+function createCupConfetti() {
+  if (!el.cupConfetti) return;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.cupConfetti.innerHTML = "";
+  if (reducedMotion) return;
+
+  for (let index = 0; index < 28; index += 1) {
+    const particle = document.createElement("i");
+    particle.style.setProperty("--confetti-x", `${4 + Math.random() * 92}%`);
+    particle.style.setProperty("--confetti-delay", `${Math.random() * 1.2}s`);
+    particle.style.setProperty("--confetti-duration", `${2.8 + Math.random() * 2.2}s`);
+    particle.style.setProperty("--confetti-rotate", `${120 + Math.random() * 520}deg`);
+    particle.dataset.shape = String(index % 4);
+    el.cupConfetti.appendChild(particle);
+  }
+}
+
+function openCupPreview() {
+  if (!el.cupResultDialog) return;
+  renderCupPreview();
+  createCupConfetti();
+  closeRankingDialog();
+  el.cupResultDialog.showModal();
+}
+
+function closeCupPreview({ reopenRanking = false } = {}) {
+  if (el.cupResultDialog?.open) el.cupResultDialog.close();
+  if (reopenRanking) window.setTimeout(openRankingDialog, 80);
 }
 
 async function toggleMedalRankingParticipation() {
@@ -6457,6 +6642,13 @@ el.closeRanking?.addEventListener("click", closeRankingDialog);
 el.rankingDockParticipation?.addEventListener("click", toggleMedalRankingParticipation);
 el.rankingDialogParticipation?.addEventListener("click", toggleMedalRankingParticipation);
 el.accountRankingParticipation?.addEventListener("click", toggleMedalRankingParticipation);
+el.openCupPreview?.addEventListener("click", openCupPreview);
+el.closeCupResultTop?.addEventListener("click", () => closeCupPreview());
+el.closeCupResult?.addEventListener("click", () => closeCupPreview());
+el.cupBackToRanking?.addEventListener("click", () => closeCupPreview({ reopenRanking: true }));
+el.cupResultDialog?.addEventListener("click", (event) => {
+  if (event.target === el.cupResultDialog) closeCupPreview();
+});
 
 el.profileRankAnchor?.addEventListener("click", (event) => {
   event.stopPropagation();

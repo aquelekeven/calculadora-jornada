@@ -1054,12 +1054,64 @@
         </p>
       </aside>
 
-      <div class="ranking-dialog-actions">
+      <div class="ranking-dialog-actions ranking-dialog-actions-preview">
+        <button id="openCupPreview" class="btn secondary cup-preview-launch" type="button">
+          Prévia da Copa
+        </button>
         <button id="rankingDialogParticipation" class="btn secondary" type="button" disabled>
           Não quero participar
         </button>
         <button id="closeRanking" class="btn primary" type="button">Fechar</button>
       </div>
+    </div>
+  </dialog>
+
+  <dialog id="cupResultDialog" class="cup-result-dialog" aria-labelledby="cupResultTitle">
+    <div class="cup-result-shell">
+      <section class="cup-result-hero">
+        <div id="cupConfetti" class="cup-confetti" aria-hidden="true"></div>
+        <div class="cup-orbit cup-orbit-one" aria-hidden="true"></div>
+        <div class="cup-orbit cup-orbit-two" aria-hidden="true"></div>
+        <div class="cup-orbit cup-orbit-three" aria-hidden="true"></div>
+
+        <header class="cup-result-topbar">
+          <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar prévia da Copa">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <span class="cup-preview-pill">Prévia visual · dados simulados</span>
+        </header>
+
+        <div class="cup-result-heading">
+          <p>Copa da Jornada</p>
+          <h2 id="cupResultTitle">Resultado da temporada</h2>
+          <span id="cupResultPeriod">Julho de 2026</span>
+        </div>
+
+        <div id="cupPodium" class="cup-podium" aria-label="Pódio da temporada"></div>
+      </section>
+
+      <section class="cup-result-board">
+        <header class="cup-board-head">
+          <div>
+            <p class="eyebrow">Classificação final</p>
+            <h3 id="cupBoardTitle">Copa da Jornada</h3>
+          </div>
+          <span id="cupBoardPeriod">Julho de 2026</span>
+        </header>
+
+        <p class="cup-preview-note">
+          Esta versão serve apenas para testar o visual. Os pontos abaixo são simulados e ainda não alteram o ranking real.
+        </p>
+
+        <ol id="cupResultList" class="cup-result-list" aria-live="polite"></ol>
+
+        <article id="cupMyResult" class="cup-my-result hidden"></article>
+
+        <footer class="cup-result-actions">
+          <button id="cupBackToRanking" class="btn secondary" type="button">Voltar ao ranking</button>
+          <button id="closeCupResult" class="btn primary" type="button">Continuar no aplicativo</button>
+        </footer>
+      </section>
     </div>
   </dialog>
 
