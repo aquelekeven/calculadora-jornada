@@ -4274,3 +4274,100 @@ html[data-theme="dark"][data-palette="coruja"]{
 @media(prefers-reduced-motion:reduce){
   .updates-unread{animation:none!important}
 }
+
+
+/* V2.1 · explosão matemática ao clicar no ícone */
+.brand-calculator-icon{
+  position:relative;
+  isolation:isolate;
+  overflow:visible;
+  cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.brand-calculator-icon svg{
+  position:relative;
+  z-index:3;
+  pointer-events:none;
+}
+.brand-calculator-icon:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--brand-icon) 34%,transparent);
+  outline-offset:4px;
+}
+.brand-calculator-icon.math-burst-active{
+  animation:math-icon-pop .48s cubic-bezier(.2,.88,.3,1.35);
+}
+.brand-calculator-icon.math-burst-active::after{
+  content:"";
+  position:absolute;
+  z-index:1;
+  inset:-9px;
+  border:2px solid color-mix(in srgb,var(--brand-icon) 64%,transparent);
+  border-radius:inherit;
+  pointer-events:none;
+  animation:math-burst-ring .72s ease-out forwards;
+}
+.math-burst-layer{
+  position:absolute;
+  z-index:2;
+  left:50%;
+  top:50%;
+  width:0;
+  height:0;
+  pointer-events:none;
+  color:var(--brand-icon);
+}
+.math-burst-particle{
+  position:absolute;
+  left:0;
+  top:0;
+  display:block;
+  min-width:1ch;
+  color:currentColor;
+  font-size:clamp(.78rem,1.9vw,1.05rem);
+  font-weight:850;
+  line-height:1;
+  text-align:center;
+  opacity:0;
+  text-shadow:0 2px 8px color-mix(in srgb,var(--card-solid) 76%,transparent);
+  transform:translate(-50%,-50%) scale(.25);
+  animation:math-particle-burst 1s cubic-bezier(.16,.78,.28,1) var(--burst-delay) forwards;
+}
+@keyframes math-icon-pop{
+  0%{transform:scale(1) rotate(0)}
+  34%{transform:scale(.88) rotate(-4deg)}
+  68%{transform:scale(1.12) rotate(3deg)}
+  100%{transform:scale(1) rotate(0)}
+}
+@keyframes math-burst-ring{
+  0%{opacity:.78;transform:scale(.62)}
+  100%{opacity:0;transform:scale(1.52)}
+}
+@keyframes math-particle-burst{
+  0%{
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.2) rotate(0);
+  }
+  12%{opacity:1}
+  72%{opacity:.92}
+  100%{
+    opacity:0;
+    transform:
+      translate(-50%,-50%)
+      translate(var(--burst-x),var(--burst-y))
+      scale(var(--burst-scale))
+      rotate(var(--burst-rotation));
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .brand-calculator-icon.math-burst-active{
+    animation:math-icon-reduced .3s ease;
+  }
+  .brand-calculator-icon.math-burst-active::after,
+  .math-burst-particle{
+    animation:none;
+  }
+  @keyframes math-icon-reduced{
+    50%{transform:scale(1.07)}
+  }
+}

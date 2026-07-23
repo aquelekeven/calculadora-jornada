@@ -3,7 +3,116 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2";
+const APP_RELEASE_ID = "v2.1";
+
+
+const MATH_BURST_SYMBOLS = [
+  "+", "−", "×", "÷", "=", "%", "√", "π", "Σ", "∞",
+  "1", "2", "3", "4", "7", "8", "9", "(", ")", "x²"
+];
+
+function triggerMathBurst(icon) {
+  if (!icon) return;
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  icon.classList.remove("math-burst-active");
+  void icon.offsetWidth;
+  icon.classList.add("math-burst-active");
+
+  if (reducedMotion) {
+    window.setTimeout(() => icon.classList.remove("math-burst-active"), 360);
+    return;
+  }
+
+  icon.querySelectorAll(".math-burst-layer").forEach((layer) => layer.remove());
+
+  const layer = document.createElement("span");
+  layer.className = "math-burst-layer";
+  layer.setAttribute("aria-hidden", "true");
+
+  const compact = Boolean(icon.closest(".compact-brand"));
+  const particleCount = compact ? 18 : 22;
+  const baseDistance = compact ? 62 : 72;
+
+  for (let index = 0; index < particleCount; index += 1) {
+    const particle = document.createElement("span");
+    const angle = ((Math.PI * 2) / particleCount) * index + (Math.random() - 0.5) * 0.32;
+    const distance = baseDistance + Math.random() * (compact ? 34 : 42);
+    const x = Math.cos(angle) * distance;
+    const y = Math.sin(angle) * distance;
+    const rotation = -150 + Math.random() * 300;
+    const scale = 0.82 + Math.random() * 0.72;
+    const delay = Math.random() * 90;
+
+    particle.className = "math-burst-particle";
+    particle.textContent = MATH_BURST_SYMBOLS[
+      Math.floor(Math.random() * MATH_BURST_SYMBOLS.length)
+    ];
+    particle.style.setProperty("--burst-x", `${x.toFixed(1)}px`);
+    particle.style.setProperty("--burst-y", `${y.toFixed(1)}px`);
+    particle.style.setProperty("--burst-rotation", `${rotation.toFixed(0)}deg`);
+    particle.style.setProperty("--burst-scale", scale.toFixed(2));
+    particle.style.setProperty("--burst-delay", `${delay.toFixed(0)}ms`);
+
+    layer.appendChild(particle);
+  }
+
+  icon.appendChild(layer);
+
+  window.setTimeout(() => {
+    layer.remove();
+    icon.classList.remove("math-burst-active");
+  }, 1250);
+}
+
+function initializeMathBurst() {
+  document.querySelectorAll(".brand-calculator-icon").forEach((icon) => {
+    icon.setAttribute("role", "button");
+    icon.setAttribute("tabindex", "0");
+    icon.setAttribute("aria-label", "Soltar símbolos matemáticos");
+    icon.setAttribute("title", "Clique para uma explosão matemática");
+
+    icon.addEventListener("click", () => triggerMathBurst(icon));
+    icon.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      triggerMathBurst(icon);
+    });
+  });
+}
+
+function updateReleaseNotesForMathBurst() {
+  const dialog = document.getElementById("updatesDialog");
+  if (!dialog) return;
+
+  const title = dialog.querySelector(".updates-dialog-head h2");
+  const pill = dialog.querySelector(".release-pill");
+  const firstNote = dialog.querySelector(".release-note");
+
+  if (title) title.textContent = "Calculadora de Jornada · V2.1";
+  if (pill) pill.textContent = "V2.1";
+
+  if (dialog.querySelector("[data-release-note='math-burst']")) return;
+
+  const note = document.createElement("section");
+  note.className = "release-note featured";
+  note.dataset.releaseNote = "math-burst";
+  note.innerHTML = `
+    <span class="release-note-icon" aria-hidden="true">∑</span>
+    <div>
+      <strong>Explosão matemática</strong>
+      <p>Clique no ícone da calculadora para soltar números e símbolos matemáticos pela tela.</p>
+    </div>
+  `;
+
+  if (firstNote) {
+    firstNote.classList.remove("featured");
+    firstNote.before(note);
+  } else {
+    dialog.querySelector(".updates-dialog-body")?.appendChild(note);
+  }
+}
 
 const DEFAULT_MASCOT = "panda";
 const DEFAULT_PALETTE = "panda";
@@ -6188,6 +6297,9 @@ if ("serviceWorker" in navigator) {
       .catch(console.warn);
   });
 }
+
+initializeMathBurst();
+updateReleaseNotesForMathBurst();
 
 applyTheme(document.documentElement.dataset.theme || "light");
 applyPalette(DEFAULT_PALETTE);
