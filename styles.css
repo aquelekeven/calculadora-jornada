@@ -5782,3 +5782,183 @@ html[data-theme="dark"] .cup-my-result strong{color:color-mix(in srgb,var(--rank
 @media(prefers-reduced-motion:reduce){
   .public-avatar-option{transition:none}
 }
+
+/* V2.6 · Temporada mensal e extrato privado de pontos */
+.ranking-period-label{
+  display:inline-flex;
+  margin-top:5px;
+  color:var(--muted);
+  font-size:.72rem;
+  font-weight:760;
+  text-transform:capitalize;
+}
+.ranking-points-total strong{
+  color:var(--rank-deep);
+}
+.account-ranking-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.monthly-points-statement-card{
+  position:relative;
+  overflow:hidden;
+}
+.monthly-points-statement-card::before{
+  content:"";
+  position:absolute;
+  width:220px;
+  height:220px;
+  right:-110px;
+  top:-135px;
+  border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--blue) 15%,transparent),transparent 70%);
+  pointer-events:none;
+}
+.monthly-points-statement-head{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.monthly-points-statement-head h2{margin-top:3px}
+.monthly-points-month-field{
+  flex:0 0 auto;
+  display:grid;
+  gap:5px;
+  color:var(--muted);
+  font-size:.65rem;
+  font-weight:760;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.monthly-points-month-field input{
+  min-width:150px;
+  padding:9px 10px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--card-solid);
+  color:var(--text);
+  font:inherit;
+  font-size:.76rem;
+  text-transform:none;
+  letter-spacing:normal;
+}
+.monthly-points-total{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-top:17px;
+  padding:13px 15px;
+  border:1px solid color-mix(in srgb,var(--blue) 22%,var(--line));
+  border-radius:16px;
+  background:color-mix(in srgb,var(--blue2) 52%,var(--card-solid));
+}
+.monthly-points-total span{
+  color:var(--muted);
+  font-size:.72rem;
+  font-weight:760;
+}
+.monthly-points-total strong{
+  font-size:1.05rem;
+  font-weight:900;
+}
+.monthly-points-total strong.positive{color:var(--green)}
+.monthly-points-total strong.negative{color:var(--red)}
+.monthly-points-total strong.neutral{color:var(--text)}
+.monthly-points-status{
+  margin:12px 0 0;
+  font-size:.72rem;
+  line-height:1.5;
+}
+.monthly-points-status.error{color:var(--red)}
+.monthly-points-statement-list{
+  display:grid;
+  gap:8px;
+  margin:14px 0 0;
+  padding:0;
+  list-style:none;
+}
+.monthly-points-entry{
+  display:grid;
+  grid-template-columns:36px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--bg-soft);
+}
+.monthly-points-entry-icon{
+  display:grid;
+  width:34px;
+  height:34px;
+  place-items:center;
+  border-radius:11px;
+  background:var(--card-solid);
+  box-shadow:inset 0 0 0 1px var(--line);
+  font-size:.9rem;
+}
+.monthly-points-entry-copy{
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+.monthly-points-entry-copy strong{
+  overflow:hidden;
+  color:var(--text);
+  font-size:.75rem;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.monthly-points-entry-copy small{
+  color:var(--muted);
+  font-size:.63rem;
+}
+.monthly-points-entry-value{
+  min-width:38px;
+  text-align:right;
+  font-size:.86rem;
+  font-weight:900;
+}
+.monthly-points-entry.positive .monthly-points-entry-value{color:var(--green)}
+.monthly-points-entry.negative .monthly-points-entry-value{color:var(--red)}
+.monthly-points-empty{
+  padding:18px 12px;
+  border:1px dashed var(--line);
+  border-radius:14px;
+  color:var(--muted);
+  font-size:.72rem;
+  text-align:center;
+}
+.monthly-points-privacy-note{
+  margin-top:14px;
+  padding:12px 13px;
+  border:1px solid color-mix(in srgb,var(--blue) 18%,var(--line));
+  border-radius:14px;
+  background:color-mix(in srgb,var(--blue2) 32%,var(--card-solid));
+}
+.monthly-points-privacy-note strong{
+  display:block;
+  color:var(--text);
+  font-size:.72rem;
+}
+.monthly-points-privacy-note p{
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:.68rem;
+  line-height:1.5;
+}
+@media(max-width:900px){
+  .account-ranking-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .account-ranking-grid{grid-template-columns:1fr}
+  .monthly-points-statement-head{flex-direction:column}
+  .monthly-points-month-field{width:100%}
+  .monthly-points-month-field input{width:100%}
+  .monthly-points-entry{grid-template-columns:34px minmax(0,1fr) auto}
+}

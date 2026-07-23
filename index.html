@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.5.3-avatar-choice-test" />
+  <link rel="stylesheet" href="styles.css?v=2.6-pontos-mensais" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -141,8 +141,8 @@
             id="rankingButton"
             class="updates-button ranking-header-button"
             type="button"
-            aria-label="Abrir ranking de medalhas"
-            title="Ranking de medalhas"
+            aria-label="Abrir ranking mensal de pontos"
+            title="Ranking mensal de pontos"
           >
             <span class="updates-button-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -170,7 +170,7 @@
                 <aside id="profileRankCard" class="profile-rank-popover rank-tier-common" aria-hidden="true">
                   <small>Seu ranking</small>
                   <strong id="profileRankTitle">Carregando…</strong>
-                  <span id="profileRankMeta">Buscando suas medalhas</span>
+                  <span id="profileRankMeta">Buscando seus pontos</span>
                 </aside>
               </span>
               <span id="userBadgeText"></span>
@@ -214,11 +214,11 @@
       </aside>
 
 
-      <aside id="rankingDock" class="ranking-dock hidden" aria-label="Ranking de medalhas">
+      <aside id="rankingDock" class="ranking-dock hidden" aria-label="Ranking mensal de pontos">
         <header class="ranking-dock-head">
           <div>
-            <span class="ranking-kicker">🏆 Liga CLT</span>
-            <strong>Ranking</strong>
+            <span class="ranking-kicker">⚡ Temporada CLT</span>
+            <strong id="rankingDockTitle">Mês atual</strong>
           </div>
           <button id="rankingDockOpen" class="ranking-expand-button" type="button">Ver Top 10</button>
         </header>
@@ -777,7 +777,7 @@
 
           <div class="account-ranking-grid">
             <article>
-              <small>Posição</small>
+              <small>Posição no mês</small>
               <strong id="accountRankPosition">—</strong>
             </article>
             <article>
@@ -785,7 +785,11 @@
               <strong id="accountRankTitle">Carregando…</strong>
             </article>
             <article>
-              <small>Medalhas</small>
+              <small>Pontos do mês</small>
+              <strong id="accountRankPoints">0</strong>
+            </article>
+            <article>
+              <small>Medalhas totais</small>
               <strong id="accountRankMedals">0</strong>
             </article>
           </div>
@@ -797,6 +801,38 @@
           <button id="accountRankingParticipation" class="btn secondary account-ranking-action" type="button" disabled>
             Não quero participar
           </button>
+        </section>
+
+        <section class="card block monthly-points-statement-card">
+          <header class="monthly-points-statement-head">
+            <div>
+              <p class="eyebrow">Somente você consegue ver</p>
+              <h2>Extrato privado de pontos</h2>
+            </div>
+            <label class="monthly-points-month-field">
+              <span>Mês</span>
+              <input id="monthlyPointsMonth" type="month" />
+            </label>
+          </header>
+
+          <div class="monthly-points-total" aria-live="polite">
+            <span>Total do período</span>
+            <strong id="monthlyPointsTotal">0 pts</strong>
+          </div>
+
+          <p id="monthlyPointsStatus" class="muted monthly-points-status">
+            Abra esta área para carregar seu extrato.
+          </p>
+
+          <ol id="monthlyPointsStatement" class="monthly-points-statement-list" aria-live="polite"></ol>
+
+          <aside class="monthly-points-privacy-note">
+            <strong>Privado de verdade</strong>
+            <p>
+              Os demais participantes veem somente seu total mensal. Horários, almoço,
+              saldos, abonos e os motivos de cada lançamento aparecem apenas aqui.
+            </p>
+          </aside>
         </section>
 
         <section class="card block public-avatar-settings-card">
@@ -1036,18 +1072,18 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.5.3</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.6</h2>
         </div>
-        <span class="release-pill">V2.5.3</span>
+        <span class="release-pill">V2.6</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">👤</span>
+        <span class="release-note-icon" aria-hidden="true">⚡</span>
         <div>
-          <strong>Você escolhe como aparece</strong>
+          <strong>Temporada mensal por pontos</strong>
           <p>
-            Em Minha conta, agora é possível usar a foto do Google, seu mascote
-            ou apenas as iniciais no ranking e na prévia da Copa.
+            O ranking agora premia jornadas próximas de 8 horas, almoço alinhado,
+            semanas de 40 horas, medalhas novas e também considera saldos negativos.
           </p>
         </div>
       </section>
@@ -1055,10 +1091,21 @@
       <section class="release-note">
         <span class="release-note-icon" aria-hidden="true">🔒</span>
         <div>
-          <strong>Preferência individual e privada</strong>
+          <strong>Extrato visível somente para você</strong>
           <p>
-            A escolha afeta somente seu avatar público dentro do aplicativo.
-            Horários e demais informações da jornada continuam protegidos.
+            Em Minha conta, cada lançamento aparece com data, motivo e pontuação.
+            No ranking público, os outros participantes veem apenas o total de pontos.
+          </p>
+        </div>
+      </section>
+
+      <section class="release-note">
+        <span class="release-note-icon" aria-hidden="true">🏅</span>
+        <div>
+          <strong>Medalhas continuam valendo</strong>
+          <p>
+            Cada medalha nova vale pontos na temporada, enquanto sua coleção histórica
+            permanece intacta na área de conquistas.
           </p>
         </div>
       </section>
@@ -1072,7 +1119,8 @@
       <header class="ranking-dialog-head">
         <div>
           <p class="eyebrow">Competição totalmente desnecessária</p>
-          <h2 id="rankingTitle">Ranking da Liga CLT</h2>
+          <h2 id="rankingTitle">Temporada da Liga CLT</h2>
+          <span id="rankingDialogPeriod" class="ranking-period-label">Mês atual</span>
         </div>
         <span class="ranking-trophy" aria-hidden="true">🏆</span>
       </header>
@@ -1086,8 +1134,8 @@
       <aside class="ranking-privacy-note">
         <strong>O que fica visível?</strong>
         <p>
-          Somente o primeiro nome, a inicial do sobrenome, o avatar escolhido e a quantidade de medalhas.
-          Horários, faltas, abonos, comentários e outros dados da jornada não entram no ranking.
+          Somente o primeiro nome, a inicial do sobrenome, o avatar escolhido e o total de pontos do mês.
+          Horários, faltas, abonos, almoço, comentários e o extrato detalhado não aparecem para os demais.
         </p>
       </aside>
 
@@ -1115,7 +1163,7 @@
           <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar prévia da Copa">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
           </button>
-          <span class="cup-preview-pill">Prévia visual · dados simulados</span>
+          <span class="cup-preview-pill">Prévia visual · pontos atuais</span>
         </header>
 
         <div class="cup-result-heading">
@@ -1304,9 +1352,9 @@
         falhas temporárias de conexão. Ao sair da conta, essa cópia é removida deste dispositivo.
       </p>
       <p>
-        O ranking de medalhas é ativado automaticamente e divulga somente o primeiro nome,
-        a inicial do sobrenome, o avatar escolhido e a quantidade de medalhas. A participação
-        e o tipo de avatar podem ser alterados pelo próprio usuário em Minha conta.
+        O ranking mensal é ativado automaticamente e divulga somente o primeiro nome,
+        a inicial do sobrenome, o avatar escolhido e o total de pontos da temporada. O extrato
+        detalhado permanece privado. A participação e o avatar podem ser alterados em Minha conta.
       </p>
       <button class="btn primary closePrivacyNotice" type="button">Entendi</button>
     </div>
@@ -1333,6 +1381,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.5.3-avatar-choice-test"></script>
+  <script src="app.js?v=2.6-pontos-mensais"></script>
 </body>
 </html>

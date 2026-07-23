@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.5.3";
+const APP_RELEASE_ID = "v2.6";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -250,6 +250,7 @@ const el = {
   rankingButton: $("rankingButton"),
   rankingDock: $("rankingDock"),
   rankingDockOpen: $("rankingDockOpen"),
+  rankingDockTitle: $("rankingDockTitle"),
   rankingDockStatus: $("rankingDockStatus"),
   rankingDockList: $("rankingDockList"),
   rankingDockParticipation: $("rankingDockParticipation"),
@@ -257,6 +258,7 @@ const el = {
   rankingDialogStatus: $("rankingDialogStatus"),
   rankingDialogList: $("rankingDialogList"),
   rankingDialogParticipation: $("rankingDialogParticipation"),
+  rankingDialogPeriod: $("rankingDialogPeriod"),
   openCupPreview: $("openCupPreview"),
   cupResultDialog: $("cupResultDialog"),
   cupConfetti: $("cupConfetti"),
@@ -277,6 +279,7 @@ const el = {
   accountRankingBadge: $("accountRankingBadge"),
   accountRankPosition: $("accountRankPosition"),
   accountRankTitle: $("accountRankTitle"),
+  accountRankPoints: $("accountRankPoints"),
   accountRankMedals: $("accountRankMedals"),
   accountRankStatus: $("accountRankStatus"),
   accountRankingParticipation: $("accountRankingParticipation"),
@@ -288,6 +291,10 @@ const el = {
   avatarModeMascotPreview: $("avatarModeMascotPreview"),
   avatarModeInitialsPreview: $("avatarModeInitialsPreview"),
   publicAvatarSettingsStatus: $("publicAvatarSettingsStatus"),
+  monthlyPointsMonth: $("monthlyPointsMonth"),
+  monthlyPointsTotal: $("monthlyPointsTotal"),
+  monthlyPointsStatus: $("monthlyPointsStatus"),
+  monthlyPointsStatement: $("monthlyPointsStatement"),
   closeRanking: $("closeRanking"),
   privacyDialog: $("privacyDialog"),
   termsDialog: $("termsDialog"),
@@ -499,6 +506,13 @@ let medalRankingAvatarMode = "initials";
 let medalRankingGoogleAvatarAvailable = false;
 let medalRankingAvatarSettingsLoading = false;
 let medalRankingAvatarSettingsError = "";
+let monthlyPointsCurrentTotal = 0;
+let monthlyPointsCurrentPosition = null;
+let monthlyPointsStatementRows = [];
+let monthlyPointsStatementTotal = 0;
+let monthlyPointsStatementMonth = "";
+let monthlyPointsStatementLoading = false;
+let monthlyPointsStatementError = "";
 
 function accounts() {
   return cloudAccountsCache;
@@ -800,6 +814,13 @@ function resetCloudInterface() {
   medalRankingGoogleAvatarAvailable = false;
   medalRankingAvatarSettingsLoading = false;
   medalRankingAvatarSettingsError = "";
+  monthlyPointsCurrentTotal = 0;
+  monthlyPointsCurrentPosition = null;
+  monthlyPointsStatementRows = [];
+  monthlyPointsStatementTotal = 0;
+  monthlyPointsStatementMonth = "";
+  monthlyPointsStatementLoading = false;
+  monthlyPointsStatementError = "";
   el.rankingDock?.classList.add("hidden");
   if (el.rankingDialog?.open) el.rankingDialog.close();
   localStorage.removeItem(STORE);
@@ -1404,6 +1425,14 @@ function updateAccountInterface() {
   loadSalarySettings(user);
   renderPersonalRankingSummary();
   renderPublicAvatarSettings();
+
+  if (el.monthlyPointsMonth && !el.monthlyPointsMonth.value) {
+    el.monthlyPointsMonth.value = currentMonthKey();
+    el.monthlyPointsMonth.max = currentMonthKey();
+  }
+  loadMonthlyPointsStatement(el.monthlyPointsMonth?.value || currentMonthKey(), {
+    quiet: monthlyPointsStatementRows.length > 0
+  });
 }
 
 function selectMascot(mascotId) {
@@ -2446,17 +2475,21 @@ function localMedalCount() {
   return achievementUnlockedCount(user?.achievementState || {});
 }
 
+
 function personalRankingSummary() {
   const current = currentRankingRow();
-  const medalCount = current?.medalCount ?? localMedalCount();
+  const medalCount = localMedalCount();
+  const points = current?.points ?? monthlyPointsCurrentTotal;
+  const resolvedPosition = current?.position ?? monthlyPointsCurrentPosition;
 
   if (medalRankingLoading && !medalRankingAvailable && !medalRankingRows.length) {
     return {
       tier: { key: "common", title: "Carregando…", icon: "…" },
       position: "—",
+      points,
       medalCount,
       shortTitle: "Carregando seu rank…",
-      status: "Buscando sua colocação na Liga CLT."
+      status: "Buscando sua colocação na temporada atual."
     };
   }
 
@@ -2464,20 +2497,22 @@ function personalRankingSummary() {
     return {
       tier: { key: "hidden", title: "Fora do ranking", icon: "○" },
       position: "—",
+      points,
       medalCount,
       shortTitle: "Fora do ranking",
-      status: "Você está oculto para os demais, mas continua vendo a classificação."
+      status: "Você está oculto para os demais, mas continua vendo seus pontos e a classificação."
     };
   }
 
-  if (current) {
-    const tier = rankTierForPosition(current.position);
+  if (resolvedPosition) {
+    const tier = rankTierForPosition(resolvedPosition);
     return {
       tier,
-      position: `${current.position}º lugar`,
+      position: `${resolvedPosition}º lugar`,
+      points,
       medalCount,
-      shortTitle: `${current.position}º lugar · ${tier.title}`,
-      status: "Sua posição acompanha automaticamente a quantidade de medalhas conquistadas."
+      shortTitle: `${resolvedPosition}º lugar · ${tier.title}`,
+      status: `Temporada de ${pointsMonthLabel(currentMonthKey())}: sua posição usa somente o total mensal de pontos.`
     };
   }
 
@@ -2485,6 +2520,7 @@ function personalRankingSummary() {
     return {
       tier: { key: "common", title: "Rank indisponível", icon: "!" },
       position: "—",
+      points,
       medalCount,
       shortTitle: "Rank indisponível",
       status: medalRankingError
@@ -2494,15 +2530,18 @@ function personalRankingSummary() {
   return {
     tier: { key: "common", title: "CLT Comum", icon: "●" },
     position: "Aguardando",
+    points,
     medalCount,
-    shortTitle: "Aguardando colocação",
-    status: "Seu perfil está sendo incluído no ranking."
+    shortTitle: "Aguardando pontuação",
+    status: "Registre ou classifique os dias do mês para entrar na temporada."
   };
 }
+
 
 function renderPersonalRankingSummary() {
   const summary = personalRankingSummary();
   const medalLabel = summary.medalCount === 1 ? "medalha" : "medalhas";
+  const pointsLabel = summary.points === 1 ? "ponto" : "pontos";
 
   applyRankTierClass(el.profileRankCard, summary.tier.key);
   applyRankTierClass(el.accountRankingCard, summary.tier.key);
@@ -2510,7 +2549,7 @@ function renderPersonalRankingSummary() {
 
   if (el.profileRankTitle) el.profileRankTitle.textContent = summary.shortTitle;
   if (el.profileRankMeta) {
-    el.profileRankMeta.textContent = `${summary.medalCount} ${medalLabel}`;
+    el.profileRankMeta.textContent = `${summary.points} ${pointsLabel} · ${summary.medalCount} ${medalLabel}`;
   }
 
   if (el.accountRankingBadge) {
@@ -2518,6 +2557,7 @@ function renderPersonalRankingSummary() {
   }
   if (el.accountRankPosition) el.accountRankPosition.textContent = summary.position;
   if (el.accountRankTitle) el.accountRankTitle.textContent = summary.tier.title;
+  if (el.accountRankPoints) el.accountRankPoints.textContent = String(summary.points);
   if (el.accountRankMedals) el.accountRankMedals.textContent = String(summary.medalCount);
   if (el.accountRankStatus) el.accountRankStatus.textContent = summary.status;
 
@@ -2560,6 +2600,7 @@ function safePublicAvatarUrl(value) {
   }
 }
 
+
 function normalizeRankingRow(row) {
   const receivedMode = String(row?.avatar_mode || "initials").toLowerCase();
   const avatarMode = ["google", "mascot", "initials"].includes(receivedMode)
@@ -2567,11 +2608,12 @@ function normalizeRankingRow(row) {
     : "initials";
   const mascotId = MASCOTS[row?.mascot_id] ? row.mascot_id : DEFAULT_MASCOT;
   const avatarUrl = safePublicAvatarUrl(row?.avatar_url);
+  const rawPosition = Number(row?.position);
 
   return {
-    position: Math.max(1, Number(row?.position) || 1),
+    position: Number.isFinite(rawPosition) && rawPosition > 0 ? rawPosition : null,
     displayName: String(row?.display_name || "Usuário").trim() || "Usuário",
-    medalCount: Math.max(0, Number(row?.medal_count) || 0),
+    points: Math.round(Number(row?.total_points) || 0),
     avatarMode: avatarMode === "google" && !avatarUrl ? "mascot" : avatarMode,
     avatarUrl,
     mascotId,
@@ -2640,6 +2682,7 @@ function publicAvatarModeLabel(mode) {
   return "Apenas iniciais";
 }
 
+
 function publicAvatarPreviewRow(mode) {
   const user = accounts()[currentUser];
   const name = displayName(user);
@@ -2648,7 +2691,7 @@ function publicAvatarPreviewRow(mode) {
   return {
     position: currentRankingRow()?.position || 4,
     displayName: name,
-    medalCount: localMedalCount(),
+    points: monthlyPointsCurrentTotal,
     avatarMode: mode,
     avatarUrl: mode === "google" ? googleUrl : "",
     mascotId: ensureMascot(user),
@@ -2781,8 +2824,148 @@ async function setPublicRankingAvatarMode(mode) {
   }
 }
 
+
+
+function pointsMonthLabel(monthKey) {
+  const match = String(monthKey || "").match(/^(\d{4})-(\d{2})$/);
+  if (!match) return "Mês atual";
+
+  const label = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric"
+  }).format(new Date(Number(match[1]), Number(match[2]) - 1, 1));
+
+  return label.replace(/^./, (character) => character.toUpperCase());
+}
+
+function monthlyPointsCategoryIcon(category) {
+  const icons = {
+    journey: "⏱",
+    lunch: "🍽",
+    negative: "↘",
+    weekly: "📅",
+    medal: "🏅"
+  };
+  return icons[category] || "•";
+}
+
+function renderMonthlyPointsStatement() {
+  if (!el.monthlyPointsStatement || !el.monthlyPointsStatus || !el.monthlyPointsTotal) return;
+
+  const monthKey = monthlyPointsStatementMonth || el.monthlyPointsMonth?.value || currentMonthKey();
+  const total = Math.round(Number(monthlyPointsStatementTotal) || 0);
+  const totalClass = total > 0 ? "positive" : total < 0 ? "negative" : "neutral";
+  const totalLabel = Math.abs(total) === 1 ? "pt" : "pts";
+
+  el.monthlyPointsTotal.textContent = `${total} ${totalLabel}`;
+  el.monthlyPointsTotal.classList.remove("positive", "negative", "neutral");
+  el.monthlyPointsTotal.classList.add(totalClass);
+
+  if (monthlyPointsStatementLoading) {
+    el.monthlyPointsStatus.textContent = "Carregando seu extrato privado…";
+    el.monthlyPointsStatus.classList.remove("error");
+    el.monthlyPointsStatement.innerHTML = '<li class="monthly-points-empty">Buscando lançamentos…</li>';
+    return;
+  }
+
+  if (monthlyPointsStatementError) {
+    el.monthlyPointsStatus.textContent = monthlyPointsStatementError;
+    el.monthlyPointsStatus.classList.add("error");
+    el.monthlyPointsStatement.innerHTML = '<li class="monthly-points-empty">Não foi possível carregar o extrato.</li>';
+    return;
+  }
+
+  el.monthlyPointsStatus.classList.remove("error");
+  el.monthlyPointsStatus.textContent = `${pointsMonthLabel(monthKey)} · este detalhamento só aparece na sua conta.`;
+
+  if (!monthlyPointsStatementRows.length) {
+    el.monthlyPointsStatement.innerHTML = '<li class="monthly-points-empty">Nenhum lançamento de pontos neste mês.</li>';
+    return;
+  }
+
+  el.monthlyPointsStatement.innerHTML = monthlyPointsStatementRows.map((row) => {
+    const points = Math.round(Number(row.points) || 0);
+    const tone = points > 0 ? "positive" : points < 0 ? "negative" : "neutral";
+    const date = String(row.event_date || "");
+    const description = escapeRankingText(row.description || "Lançamento de pontos");
+    const category = String(row.category || "");
+
+    return `
+      <li class="monthly-points-entry ${tone}">
+        <span class="monthly-points-entry-icon" aria-hidden="true">${monthlyPointsCategoryIcon(category)}</span>
+        <span class="monthly-points-entry-copy">
+          <strong>${description}</strong>
+          <small>${dateBR(date)}</small>
+        </span>
+        <strong class="monthly-points-entry-value">${points > 0 ? "+" : ""}${points}</strong>
+      </li>
+    `;
+  }).join("");
+}
+
+async function loadMonthlyPointsStatement(monthKey = currentMonthKey(), { quiet = false } = {}) {
+  if (!currentUser || !supabaseClient || !authSession) return;
+
+  const normalizedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(monthKey || ""))
+    ? String(monthKey)
+    : currentMonthKey();
+
+  monthlyPointsStatementMonth = normalizedMonth;
+  if (el.monthlyPointsMonth) {
+    el.monthlyPointsMonth.value = normalizedMonth;
+    el.monthlyPointsMonth.max = currentMonthKey();
+  }
+
+  if (!quiet) {
+    monthlyPointsStatementLoading = true;
+    monthlyPointsStatementError = "";
+    renderMonthlyPointsStatement();
+  }
+
+  try {
+    const [summaryResult, statementResult] = await Promise.all([
+      supabaseClient.rpc("get_my_monthly_points_summary", {
+        p_month_key: normalizedMonth
+      }),
+      supabaseClient.rpc("get_my_monthly_points_statement", {
+        p_month_key: normalizedMonth
+      })
+    ]);
+
+    if (summaryResult.error) throw summaryResult.error;
+    if (statementResult.error) throw statementResult.error;
+
+    const summary = Array.isArray(summaryResult.data)
+      ? summaryResult.data[0]
+      : summaryResult.data;
+
+    monthlyPointsStatementRows = Array.isArray(statementResult.data)
+      ? statementResult.data
+      : [];
+    monthlyPointsStatementTotal = Math.round(Number(summary?.total_points) || 0);
+    monthlyPointsStatementError = "";
+
+    if (normalizedMonth === currentMonthKey()) {
+      monthlyPointsCurrentTotal = monthlyPointsStatementTotal;
+      monthlyPointsCurrentPosition = Number(summary?.position) > 0
+        ? Number(summary.position)
+        : null;
+    }
+  } catch (error) {
+    console.error("Falha ao carregar o extrato privado de pontos.", error);
+    monthlyPointsStatementRows = [];
+    monthlyPointsStatementError = navigator.onLine
+      ? "Extrato indisponível. Confira se o SQL da V2.6 foi executado."
+      : "Sem conexão para carregar seu extrato.";
+  } finally {
+    monthlyPointsStatementLoading = false;
+    renderMonthlyPointsStatement();
+    renderPersonalRankingSummary();
+  }
+}
+
 function rankingRowMarkup(row, options = {}) {
-  const medalLabel = row.medalCount === 1 ? "medalha" : "medalhas";
+  const pointsLabel = row.points === 1 ? "ponto" : "pontos";
   const tier = rankTierForPosition(row.position);
   const currentLabel = row.isCurrentUser
     ? '<small class="ranking-you-label">você</small>'
@@ -2801,9 +2984,9 @@ function rankingRowMarkup(row, options = {}) {
         </span>
         ${currentLabel}
       </span>
-      <span class="ranking-medals">
-        <strong>${row.medalCount}</strong>
-        <small>${medalLabel}</small>
+      <span class="ranking-medals ranking-points-total">
+        <strong>${row.points}</strong>
+        <small>${pointsLabel}</small>
       </span>
     </li>
   `;
@@ -2823,9 +3006,10 @@ function rankingRowsForDock() {
   return firstFive.map((row) => ({ row, separated: false }));
 }
 
+
 function rankingStatusText() {
   if (medalRankingLoading && !medalRankingRows.length) {
-    return "Carregando ranking…";
+    return "Carregando temporada…";
   }
 
   if (medalRankingError) {
@@ -2833,11 +3017,12 @@ function rankingStatusText() {
   }
 
   if (!medalRankingParticipates) {
-    return "Você está oculto, mas continua podendo acompanhar o ranking.";
+    return "Você está oculto, mas continua podendo acompanhar a temporada.";
   }
 
-  return "Você participa automaticamente e sua posição é atualizada com suas medalhas.";
+  return `Temporada de ${pointsMonthLabel(currentMonthKey())} · publicamente aparece somente o total de pontos.`;
 }
+
 
 function renderMedalRanking() {
   const status = rankingStatusText();
@@ -2845,6 +3030,10 @@ function renderMedalRanking() {
     ? "Não quero participar"
     : "Participar novamente";
   const controlsDisabled = medalRankingLoading || !medalRankingAvailable;
+  const period = pointsMonthLabel(currentMonthKey());
+
+  if (el.rankingDockTitle) el.rankingDockTitle.textContent = period;
+  if (el.rankingDialogPeriod) el.rankingDialogPeriod.textContent = period;
 
   [el.rankingDockStatus, el.rankingDialogStatus].forEach((target) => {
     if (!target) return;
@@ -2863,8 +3052,8 @@ function renderMedalRanking() {
     const empty = medalRankingLoading
       ? '<li class="ranking-empty">Buscando colocações…</li>'
       : medalRankingError
-        ? '<li class="ranking-empty">O ranking ainda não pôde ser carregado.</li>'
-        : '<li class="ranking-empty">Ainda não há participantes no ranking.</li>';
+        ? '<li class="ranking-empty">A temporada ainda não pôde ser carregada.</li>'
+        : '<li class="ranking-empty">Ainda não há pontuação registrada neste mês.</li>';
 
     if (el.rankingDockList) el.rankingDockList.innerHTML = empty;
     if (el.rankingDialogList) el.rankingDialogList.innerHTML = empty;
@@ -2898,14 +3087,19 @@ function renderMedalRanking() {
   renderPublicAvatarSettings();
 }
 
+
 function scheduleMedalRankingRefresh(delay = 350) {
   if (!currentUser || !supabaseClient || !authSession || !navigator.onLine) return;
 
   clearTimeout(medalRankingRefreshTimer);
   medalRankingRefreshTimer = window.setTimeout(() => {
     loadMedalRanking({ quiet: true });
+    if ((el.monthlyPointsMonth?.value || currentMonthKey()) === currentMonthKey()) {
+      loadMonthlyPointsStatement(currentMonthKey(), { quiet: true });
+    }
   }, delay);
 }
+
 
 async function loadMedalRanking({ quiet = false } = {}) {
   if (!currentUser || !supabaseClient || !authSession) return;
@@ -2918,16 +3112,25 @@ async function loadMedalRanking({ quiet = false } = {}) {
     renderMedalRanking();
   }
 
+  const monthKey = currentMonthKey();
+
   try {
-    const [rankingResult, statusResult, avatarSettingsResult] = await Promise.all([
-      supabaseClient.rpc("get_medal_ranking", { p_limit: 10 }),
+    const [rankingResult, statusResult, avatarSettingsResult, ownSummaryResult] = await Promise.all([
+      supabaseClient.rpc("get_monthly_points_ranking", {
+        p_month_key: monthKey,
+        p_limit: 10
+      }),
       supabaseClient.rpc("get_my_medal_ranking_status"),
-      supabaseClient.rpc("get_my_medal_ranking_avatar_settings")
+      supabaseClient.rpc("get_my_medal_ranking_avatar_settings"),
+      supabaseClient.rpc("get_my_monthly_points_summary", {
+        p_month_key: monthKey
+      })
     ]);
 
     if (rankingResult.error) throw rankingResult.error;
     if (statusResult.error) throw statusResult.error;
     if (avatarSettingsResult.error) throw avatarSettingsResult.error;
+    if (ownSummaryResult.error) throw ownSummaryResult.error;
 
     medalRankingRows = Array.isArray(rankingResult.data)
       ? rankingResult.data.map(normalizeRankingRow)
@@ -2937,21 +3140,28 @@ async function loadMedalRanking({ quiet = false } = {}) {
     const avatarSettings = Array.isArray(avatarSettingsResult.data)
       ? avatarSettingsResult.data[0]
       : avatarSettingsResult.data;
+    const ownSummary = Array.isArray(ownSummaryResult.data)
+      ? ownSummaryResult.data[0]
+      : ownSummaryResult.data;
 
     const current = currentRankingRow();
     medalRankingAvatarMode = normalizePublicAvatarMode(
       avatarSettings?.avatar_mode || current?.avatarMode || "initials"
     );
     medalRankingGoogleAvatarAvailable = avatarSettings?.google_avatar_available === true;
+    monthlyPointsCurrentTotal = Math.round(Number(ownSummary?.total_points) || 0);
+    monthlyPointsCurrentPosition = Number(ownSummary?.position) > 0
+      ? Number(ownSummary.position)
+      : null;
     medalRankingAvatarSettingsError = "";
     medalRankingAvailable = true;
     medalRankingError = "";
   } catch (error) {
-    console.error("Falha ao carregar o ranking de medalhas.", error);
+    console.error("Falha ao carregar o ranking mensal de pontos.", error);
     medalRankingAvailable = false;
     medalRankingError = navigator.onLine
-      ? "Ranking indisponível. Confira se o SQL do ranking foi executado."
-      : "Sem conexão para atualizar o ranking.";
+      ? "Ranking de pontos indisponível. Confira se o SQL da V2.6 foi executado."
+      : "Sem conexão para atualizar a temporada.";
     medalRankingAvatarSettingsError = medalRankingError;
   } finally {
     medalRankingLoading = false;
@@ -2981,6 +3191,7 @@ function cupPreviewMonthLabel() {
   }).format(now).replace(/^./, (character) => character.toUpperCase());
 }
 
+
 function cupPreviewFallbackRows() {
   const user = accounts()[currentUser];
   const ownName = displayName(user);
@@ -2989,7 +3200,7 @@ function cupPreviewFallbackRows() {
   return names.map((name, index) => ({
     position: index + 1,
     displayName: name,
-    medalCount: Math.max(0, 37 - index * 4),
+    points: CUP_PREVIEW_POINTS[index] ?? Math.max(12, 40 - index * 3),
     avatarMode: index === 0 ? "mascot" : "initials",
     avatarUrl: "",
     mascotId: index === 0 && user ? ensureMascot(user) : DEFAULT_MASCOT,
@@ -2997,15 +3208,19 @@ function cupPreviewFallbackRows() {
   }));
 }
 
+
 function cupPreviewRows() {
-  const source = medalRankingRows.length
+  const hasRealRanking = medalRankingRows.length > 0;
+  const source = hasRealRanking
     ? medalRankingRows.slice(0, 10)
     : cupPreviewFallbackRows();
 
   return source.map((row, index) => ({
     ...row,
-    position: index + 1,
-    previewPoints: CUP_PREVIEW_POINTS[index] ?? Math.max(12, 40 - index * 3)
+    position: row.position || index + 1,
+    previewPoints: hasRealRanking
+      ? row.points
+      : (row.points ?? CUP_PREVIEW_POINTS[index] ?? Math.max(12, 40 - index * 3))
   }));
 }
 
@@ -3087,7 +3302,7 @@ function renderCupPreview() {
       el.cupMyResult.innerHTML = `
         <span>Sua colocação nesta prévia</span>
         <strong>${own.position}º lugar · ${tier.title}</strong>
-        <small>${own.previewPoints} pontos simulados</small>
+        <small>${own.previewPoints} pontos no mês</small>
       `;
       el.cupMyResult.classList.remove("hidden");
     } else {
@@ -6913,6 +7128,9 @@ el.closeRanking?.addEventListener("click", closeRankingDialog);
 el.rankingDockParticipation?.addEventListener("click", toggleMedalRankingParticipation);
 el.rankingDialogParticipation?.addEventListener("click", toggleMedalRankingParticipation);
 el.accountRankingParticipation?.addEventListener("click", toggleMedalRankingParticipation);
+el.monthlyPointsMonth?.addEventListener("change", () => {
+  loadMonthlyPointsStatement(el.monthlyPointsMonth.value);
+});
 el.publicAvatarOptions?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-avatar-mode]");
   if (!button || button.disabled) return;
