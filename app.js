@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.2";
+const APP_RELEASE_ID = "v2.3";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -247,6 +247,17 @@ const el = {
   updatesUnread: $("updatesUnread"),
   updatesDialog: $("updatesDialog"),
   closeUpdates: $("closeUpdates"),
+  rankingButton: $("rankingButton"),
+  rankingDock: $("rankingDock"),
+  rankingDockOpen: $("rankingDockOpen"),
+  rankingDockStatus: $("rankingDockStatus"),
+  rankingDockList: $("rankingDockList"),
+  rankingDockParticipation: $("rankingDockParticipation"),
+  rankingDialog: $("rankingDialog"),
+  rankingDialogStatus: $("rankingDialogStatus"),
+  rankingDialogList: $("rankingDialogList"),
+  rankingDialogParticipation: $("rankingDialogParticipation"),
+  closeRanking: $("closeRanking"),
   privacyDialog: $("privacyDialog"),
   termsDialog: $("termsDialog"),
   backupInput: $("backupInput"),
@@ -447,6 +458,12 @@ let calendarCursor = new Date();
 let noteTargetId = null;
 let negativeExcuseTargetId = null;
 let negativeExcuseMaximum = 0;
+let medalRankingRows = [];
+let medalRankingParticipates = true;
+let medalRankingAvailable = false;
+let medalRankingLoading = false;
+let medalRankingError = "";
+let medalRankingRefreshTimer = null;
 
 function accounts() {
   return cloudAccountsCache;
@@ -646,6 +663,7 @@ function persistCurrentUserNow() {
       cloudSavePending = false;
       cloudOfflineMode = false;
       setSyncState("synced");
+      scheduleMedalRankingRefresh();
     })
     .catch((error) => {
       console.error("Falha ao sincronizar os dados.", error);
@@ -737,6 +755,14 @@ function resetCloudInterface() {
   cloudAccountsCache = {};
   cloudSavePending = false;
   clearTimeout(cloudSaveTimer);
+  clearTimeout(medalRankingRefreshTimer);
+  medalRankingRows = [];
+  medalRankingParticipates = true;
+  medalRankingAvailable = false;
+  medalRankingLoading = false;
+  medalRankingError = "";
+  el.rankingDock?.classList.add("hidden");
+  if (el.rankingDialog?.open) el.rankingDialog.close();
   localStorage.removeItem(STORE);
 
   el.appView.classList.add("hidden");
@@ -958,6 +984,8 @@ function openApp(code) {
   calculateRecord();
   renderHistory();
   renderAchievements();
+  el.rankingDock?.classList.remove("hidden");
+  loadMedalRanking();
 }
 
 
@@ -2323,6 +2351,223 @@ function toggleAbsenceExcuse(id) {
 function historyRecordById(id) {
   const user = accounts()[currentUser];
   return (user?.history || []).find((record) => record.id === id) || null;
+}
+
+
+function escapeRankingText(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[character]);
+}
+
+function normalizeRankingRow(row) {
+  return {
+    position: Math.max(1, Number(row?.position) || 1),
+    displayName: String(row?.display_name || "Usuário").trim() || "Usuário",
+    medalCount: Math.max(0, Number(row?.medal_count) || 0),
+    isCurrentUser: row?.is_current_user === true
+  };
+}
+
+function rankingRowMarkup(row, options = {}) {
+  const medalLabel = row.medalCount === 1 ? "medalha" : "medalhas";
+  const currentLabel = row.isCurrentUser
+    ? '<small class="ranking-you-label">você</small>'
+    : "";
+  const separated = options.separated ? " ranking-row-separated" : "";
+
+  return `
+    <li class="ranking-row ${row.isCurrentUser ? "current-user" : ""}${separated}">
+      <span class="ranking-position">${row.position}º</span>
+      <span class="ranking-person">
+        <strong>${escapeRankingText(row.displayName)}</strong>
+        ${currentLabel}
+      </span>
+      <span class="ranking-medals">
+        <strong>${row.medalCount}</strong>
+        <small>${medalLabel}</small>
+      </span>
+    </li>
+  `;
+}
+
+function rankingRowsForDock() {
+  const firstFive = medalRankingRows.filter((row) => row.position <= 5);
+  const current = medalRankingRows.find((row) => row.isCurrentUser);
+
+  if (current && !firstFive.some((row) => row.isCurrentUser)) {
+    return [
+      ...firstFive.map((row) => ({ row, separated: false })),
+      { row: current, separated: true }
+    ];
+  }
+
+  return firstFive.map((row) => ({ row, separated: false }));
+}
+
+function rankingStatusText() {
+  if (medalRankingLoading && !medalRankingRows.length) {
+    return "Carregando ranking…";
+  }
+
+  if (medalRankingError) {
+    return medalRankingError;
+  }
+
+  if (!medalRankingParticipates) {
+    return "Você está oculto, mas continua podendo acompanhar o ranking.";
+  }
+
+  return "Você participa automaticamente e sua posição é atualizada com suas medalhas.";
+}
+
+function renderMedalRanking() {
+  const status = rankingStatusText();
+  const toggleText = medalRankingParticipates
+    ? "Não quero participar"
+    : "Participar novamente";
+  const controlsDisabled = medalRankingLoading || !medalRankingAvailable;
+
+  [el.rankingDockStatus, el.rankingDialogStatus].forEach((target) => {
+    if (!target) return;
+    target.textContent = status;
+    target.classList.toggle("error", Boolean(medalRankingError));
+  });
+
+  [el.rankingDockParticipation, el.rankingDialogParticipation].forEach((button) => {
+    if (!button) return;
+    button.textContent = toggleText;
+    button.disabled = controlsDisabled;
+    button.classList.toggle("rejoin", !medalRankingParticipates);
+  });
+
+  if (!medalRankingRows.length) {
+    const empty = medalRankingLoading
+      ? '<li class="ranking-empty">Buscando colocações…</li>'
+      : medalRankingError
+        ? '<li class="ranking-empty">O ranking ainda não pôde ser carregado.</li>'
+        : '<li class="ranking-empty">Ainda não há participantes no ranking.</li>';
+
+    if (el.rankingDockList) el.rankingDockList.innerHTML = empty;
+    if (el.rankingDialogList) el.rankingDialogList.innerHTML = empty;
+    return;
+  }
+
+  if (el.rankingDockList) {
+    el.rankingDockList.innerHTML = rankingRowsForDock()
+      .map(({ row, separated }) => rankingRowMarkup(row, { separated }))
+      .join("");
+  }
+
+  if (el.rankingDialogList) {
+    let previousPosition = null;
+    el.rankingDialogList.innerHTML = medalRankingRows
+      .map((row) => {
+        const separated = Boolean(
+          row.isCurrentUser &&
+          previousPosition !== null &&
+          row.position > previousPosition + 1
+        );
+        previousPosition = row.position;
+        return rankingRowMarkup(row, { separated });
+      })
+      .join("");
+  }
+}
+
+function scheduleMedalRankingRefresh(delay = 350) {
+  if (!currentUser || !supabaseClient || !authSession || !navigator.onLine) return;
+
+  clearTimeout(medalRankingRefreshTimer);
+  medalRankingRefreshTimer = window.setTimeout(() => {
+    loadMedalRanking({ quiet: true });
+  }, delay);
+}
+
+async function loadMedalRanking({ quiet = false } = {}) {
+  if (!currentUser || !supabaseClient || !authSession) return;
+
+  if (!quiet) {
+    medalRankingLoading = true;
+    medalRankingError = "";
+    renderMedalRanking();
+  }
+
+  try {
+    const [rankingResult, statusResult] = await Promise.all([
+      supabaseClient.rpc("get_medal_ranking", { p_limit: 10 }),
+      supabaseClient.rpc("get_my_medal_ranking_status")
+    ]);
+
+    if (rankingResult.error) throw rankingResult.error;
+    if (statusResult.error) throw statusResult.error;
+
+    medalRankingRows = Array.isArray(rankingResult.data)
+      ? rankingResult.data.map(normalizeRankingRow)
+      : [];
+    medalRankingParticipates = statusResult.data !== false;
+    medalRankingAvailable = true;
+    medalRankingError = "";
+  } catch (error) {
+    console.error("Falha ao carregar o ranking de medalhas.", error);
+    medalRankingAvailable = false;
+    medalRankingError = navigator.onLine
+      ? "Ranking indisponível. Confira se o SQL do ranking foi executado."
+      : "Sem conexão para atualizar o ranking.";
+  } finally {
+    medalRankingLoading = false;
+    renderMedalRanking();
+  }
+}
+
+function openRankingDialog() {
+  if (!el.rankingDialog) return;
+  renderMedalRanking();
+  el.rankingDialog.showModal();
+  loadMedalRanking({ quiet: medalRankingRows.length > 0 });
+}
+
+function closeRankingDialog() {
+  if (el.rankingDialog?.open) el.rankingDialog.close();
+}
+
+async function toggleMedalRankingParticipation() {
+  if (!medalRankingAvailable || medalRankingLoading || !supabaseClient || !authSession) {
+    return;
+  }
+
+  const nextValue = !medalRankingParticipates;
+  medalRankingLoading = true;
+  renderMedalRanking();
+
+  const { data, error } = await supabaseClient.rpc(
+    "set_my_medal_ranking_participation",
+    { p_participates: nextValue }
+  );
+
+  if (error) {
+    console.error("Falha ao alterar a participação no ranking.", error);
+    medalRankingLoading = false;
+    medalRankingError = "Não foi possível alterar sua participação agora.";
+    renderMedalRanking();
+    return toast("Não foi possível alterar sua participação no ranking.", "error");
+  }
+
+  medalRankingParticipates = data !== false;
+  medalRankingError = "";
+  medalRankingLoading = false;
+  renderMedalRanking();
+  await loadMedalRanking({ quiet: true });
+
+  toast(
+    medalRankingParticipates
+      ? "Você voltou a participar do ranking."
+      : "Você não aparece mais no ranking."
+  );
 }
 
 function updateUpdatesIndicator() {
@@ -6053,6 +6298,15 @@ el.updatesDialog.addEventListener("click", (event) => {
   if (event.target === el.updatesDialog) closeUpdatesDialog();
 });
 
+el.rankingButton?.addEventListener("click", openRankingDialog);
+el.rankingDockOpen?.addEventListener("click", openRankingDialog);
+el.closeRanking?.addEventListener("click", closeRankingDialog);
+el.rankingDockParticipation?.addEventListener("click", toggleMedalRankingParticipation);
+el.rankingDialogParticipation?.addEventListener("click", toggleMedalRankingParticipation);
+el.rankingDialog?.addEventListener("click", (event) => {
+  if (event.target === el.rankingDialog) closeRankingDialog();
+});
+
 el.noteForm.addEventListener("submit", saveNote);
 el.noteText.addEventListener("input", updateNoteCounter);
 el.cancelNote.addEventListener("click", closeNoteDialog);
@@ -6368,6 +6622,10 @@ window.addEventListener("online", () => {
     persistCurrentUserNow();
   } else if (currentUser) {
     setSyncState("synced");
+  }
+
+  if (currentUser) {
+    loadMedalRanking({ quiet: medalRankingRows.length > 0 });
   }
 });
 

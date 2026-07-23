@@ -1,4 +1,4 @@
-const CACHE="jornada-fb-google-cloud-v2-2-no-lunch";
+const CACHE="jornada-fb-google-cloud-v2-3-ranking";
 const FILES=["./","./index.html","./styles.css","./app.js","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.png","./mascot-pato.png","./mascot-coelha.png","./mascot-coruja.png"];
 
 self.addEventListener("install",event=>{

@@ -136,6 +136,24 @@
             <span id="updatesUnread" class="updates-unread hidden" aria-hidden="true"></span>
           </button>
 
+
+          <button
+            id="rankingButton"
+            class="updates-button ranking-header-button"
+            type="button"
+            aria-label="Abrir ranking de medalhas"
+            title="Ranking de medalhas"
+          >
+            <span class="updates-button-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M8 4h8v3.5a4 4 0 0 1-8 0V4Z"/>
+                <path d="M8 6H5.5v1.5A3.5 3.5 0 0 0 9 11M16 6h2.5v1.5A3.5 3.5 0 0 1 15 11"/>
+                <path d="M12 11.5V16M8.5 20h7M10 16h4v4h-4z"/>
+              </svg>
+            </span>
+            <span class="updates-button-label">Ranking</span>
+          </button>
+
           <div class="profile-account-group">
             <div id="userBadge" class="account-chip">
               <span id="userAvatar" class="profile-avatar small" aria-hidden="true"></span>
@@ -178,6 +196,25 @@
         </p>
         <button class="text-action openPrivacyNotice" type="button">Saiba mais</button>
       </aside>
+
+
+      <aside id="rankingDock" class="ranking-dock hidden" aria-label="Ranking de medalhas">
+        <header class="ranking-dock-head">
+          <div>
+            <span class="ranking-kicker">🏆 Medalhas</span>
+            <strong>Ranking</strong>
+          </div>
+          <button id="rankingDockOpen" class="ranking-expand-button" type="button">Ver Top 10</button>
+        </header>
+
+        <p id="rankingDockStatus" class="ranking-status">Carregando ranking…</p>
+        <ol id="rankingDockList" class="ranking-list ranking-list-compact" aria-live="polite"></ol>
+
+        <button id="rankingDockParticipation" class="ranking-participation-button" type="button" disabled>
+          Não quero participar
+        </button>
+      </aside>
+
 
       <div id="navigationRow" class="navigation-row">
       <nav id="mainNavigation" class="main-navigation" aria-label="Áreas principais do aplicativo">
@@ -902,44 +939,76 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.2</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.3</h2>
         </div>
-        <span class="release-pill">V2.2</span>
+        <span class="release-pill">V2.3</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">↔</span>
+        <span class="release-note-icon" aria-hidden="true">🏆</span>
         <div>
-          <strong>Faixa completa de saída</strong>
+          <strong>Ranking de medalhas</strong>
           <p>
-            A aba “Hora de sair” agora mostra os horários mínimo, normal de 8 horas e máximo.
-            Depois do máximo, o saldo positivo passa a ser contabilizado integralmente.
+            Veja os usuários com mais medalhas usando apenas o primeiro nome e a inicial do sobrenome.
+            Seus horários, comentários e demais registros continuam privados.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">2×</span>
+        <span class="release-note-icon" aria-hidden="true">10</span>
         <div>
-          <strong>Registro sem intervalo</strong>
+          <strong>Top 10 e sua posição</strong>
           <p>
-            Dias excepcionais podem ser lançados somente com entrada e saída.
-            O saldo negativo continua disponível para abono no histórico.
+            O ranking mostra os dez primeiros e também sua própria colocação quando você estiver fora do Top 10.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">4×</span>
+        <span class="release-note-icon" aria-hidden="true">○</span>
         <div>
-          <strong>Fluxo padrão preservado</strong>
+          <strong>Participação sob seu controle</strong>
           <p>
-            “Com intervalo” continua selecionado automaticamente para não atrapalhar o registro normal do dia a dia.
+            Todos entram automaticamente, mas você pode se ocultar a qualquer momento e continuar acompanhando o ranking.
           </p>
         </div>
       </section>
 
       <button id="closeUpdates" class="btn primary" type="button">Entendi</button>
+    </div>
+  </dialog>
+
+  <dialog id="rankingDialog" class="ranking-dialog" aria-labelledby="rankingTitle">
+    <div class="dialog-body ranking-dialog-body">
+      <header class="ranking-dialog-head">
+        <div>
+          <p class="eyebrow">Competição totalmente desnecessária</p>
+          <h2 id="rankingTitle">Ranking de medalhas</h2>
+        </div>
+        <span class="ranking-trophy" aria-hidden="true">🏆</span>
+      </header>
+
+      <p id="rankingDialogStatus" class="ranking-status">
+        Carregando ranking…
+      </p>
+
+      <ol id="rankingDialogList" class="ranking-list" aria-live="polite"></ol>
+
+      <aside class="ranking-privacy-note">
+        <strong>O que fica visível?</strong>
+        <p>
+          Somente o primeiro nome, a inicial do sobrenome e a quantidade de medalhas.
+          Horários, faltas, abonos, comentários e outros dados da jornada não entram no ranking.
+        </p>
+      </aside>
+
+      <div class="ranking-dialog-actions">
+        <button id="rankingDialogParticipation" class="btn secondary" type="button" disabled>
+          Não quero participar
+        </button>
+        <button id="closeRanking" class="btn primary" type="button">Fechar</button>
+      </div>
     </div>
   </dialog>
 
@@ -1093,6 +1162,11 @@
       <p>
         O navegador pode manter uma cópia técnica local para permitir continuidade durante
         falhas temporárias de conexão. Ao sair da conta, essa cópia é removida deste dispositivo.
+      </p>
+      <p>
+        O ranking de medalhas é ativado automaticamente e divulga somente o primeiro nome,
+        a inicial do sobrenome e a quantidade de medalhas. A participação pode ser desativada
+        ou reativada pelo próprio usuário dentro da área do ranking.
       </p>
       <button class="btn primary closePrivacyNotice" type="button">Entendi</button>
     </div>

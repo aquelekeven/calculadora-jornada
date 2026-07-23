@@ -4448,3 +4448,273 @@ html[data-theme="dark"][data-palette="coruja"]{
   .record-mode-selector{grid-template-columns:1fr}
   .record-fields-grid.no-lunch{grid-template-columns:1fr}
 }
+
+
+/* V2.3 · ranking de medalhas */
+.ranking-header-button .updates-button-icon{
+  color:#b17b08;
+}
+.ranking-header-button:hover{
+  color:#9a6900;
+  border-color:color-mix(in srgb,#d59a18 38%,var(--line));
+  background:color-mix(in srgb,#fff1c9 58%,var(--card-solid));
+}
+html[data-theme="dark"] .ranking-header-button:hover{
+  color:#ffd16a;
+  background:color-mix(in srgb,#5a4314 50%,var(--card-solid));
+}
+
+.ranking-dock{
+  position:fixed;
+  z-index:22;
+  top:50%;
+  right:18px;
+  width:248px;
+  max-height:calc(100vh - 36px);
+  padding:15px;
+  border:1px solid var(--line);
+  border-radius:21px;
+  background:color-mix(in srgb,var(--card-solid) 94%,transparent);
+  box-shadow:0 18px 50px rgba(0,0,0,.16);
+  backdrop-filter:blur(18px);
+  transform:translateY(-50%);
+  overflow:auto;
+}
+.ranking-dock-head,
+.ranking-dialog-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.ranking-dock-head>div{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.ranking-kicker{
+  color:var(--muted);
+  font-size:.66rem;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.ranking-dock-head strong{
+  font-size:1rem;
+}
+.ranking-expand-button{
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--blue);
+  font-size:.68rem;
+  font-weight:780;
+  cursor:pointer;
+}
+.ranking-status{
+  margin:10px 0;
+  color:var(--muted);
+  font-size:.68rem;
+  line-height:1.45;
+}
+.ranking-status.error{
+  color:var(--red);
+}
+.ranking-list{
+  display:grid;
+  gap:7px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+.ranking-row{
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-height:52px;
+  padding:9px 10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--bg-soft);
+}
+.ranking-row.current-user{
+  border-color:color-mix(in srgb,var(--blue) 34%,var(--line));
+  background:color-mix(in srgb,var(--blue2) 70%,var(--card-solid));
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 8%,transparent);
+}
+.ranking-row-separated{
+  margin-top:9px;
+  position:relative;
+}
+.ranking-row-separated::before{
+  content:"Sua posição";
+  position:absolute;
+  left:4px;
+  bottom:calc(100% + 4px);
+  color:var(--muted);
+  font-size:.58rem;
+  font-weight:760;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.ranking-position{
+  display:grid;
+  place-items:center;
+  min-height:32px;
+  border-radius:10px;
+  background:var(--card-solid);
+  color:#a87100;
+  font-size:.78rem;
+  font-weight:900;
+  box-shadow:inset 0 0 0 1px var(--line);
+}
+.ranking-person{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.ranking-person strong{
+  min-width:0;
+  overflow:hidden;
+  color:var(--text);
+  font-size:.75rem;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ranking-you-label{
+  flex:0 0 auto;
+  padding:2px 5px;
+  border-radius:999px;
+  background:var(--blue);
+  color:#fff;
+  font-size:.54rem;
+  font-weight:800;
+  text-transform:uppercase;
+}
+.ranking-medals{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  line-height:1.05;
+}
+.ranking-medals strong{
+  font-size:.85rem;
+}
+.ranking-medals small{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:.54rem;
+}
+.ranking-empty{
+  padding:18px 10px;
+  border:1px dashed var(--line);
+  border-radius:14px;
+  color:var(--muted);
+  font-size:.7rem;
+  line-height:1.5;
+  text-align:center;
+}
+.ranking-participation-button{
+  width:100%;
+  margin-top:11px;
+  padding:8px 9px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--card-solid);
+  color:var(--muted);
+  font-size:.66rem;
+  font-weight:760;
+  cursor:pointer;
+}
+.ranking-participation-button:hover:not(:disabled){
+  color:var(--red);
+  border-color:color-mix(in srgb,var(--red) 30%,var(--line));
+}
+.ranking-participation-button.rejoin{
+  color:var(--green);
+  border-color:color-mix(in srgb,var(--green) 30%,var(--line));
+}
+.ranking-participation-button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+.ranking-dialog{
+  width:min(620px,calc(100vw - 28px));
+}
+.ranking-dialog-body{
+  gap:13px;
+}
+.ranking-trophy{
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  border:1px solid color-mix(in srgb,#d59a18 35%,var(--line));
+  border-radius:15px;
+  background:color-mix(in srgb,#fff1c9 70%,var(--card-solid));
+  font-size:1.3rem;
+}
+.ranking-dialog .ranking-list{
+  max-height:min(48vh,470px);
+  overflow:auto;
+  padding-right:3px;
+}
+.ranking-dialog .ranking-row{
+  grid-template-columns:48px minmax(0,1fr) auto;
+  min-height:58px;
+  padding:10px 12px;
+}
+.ranking-dialog .ranking-position{
+  min-height:36px;
+  font-size:.86rem;
+}
+.ranking-dialog .ranking-person strong{
+  font-size:.83rem;
+}
+.ranking-dialog .ranking-medals strong{
+  font-size:.95rem;
+}
+.ranking-dialog .ranking-medals small{
+  font-size:.6rem;
+}
+.ranking-privacy-note{
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--bg-soft);
+}
+.ranking-privacy-note strong{
+  font-size:.75rem;
+}
+.ranking-privacy-note p{
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:.68rem;
+  line-height:1.5;
+}
+.ranking-dialog-actions{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:9px;
+}
+.ranking-dialog-actions .rejoin{
+  color:var(--green);
+  border-color:color-mix(in srgb,var(--green) 32%,var(--line));
+}
+
+@media(max-width:1599px){
+  .ranking-dock{display:none!important}
+}
+@media(min-width:1600px){
+  .ranking-header-button .updates-button-label{display:none}
+  .ranking-header-button{width:42px;padding:0}
+}
+@media(max-width:620px){
+  .ranking-dialog-actions{grid-template-columns:1fr}
+  .ranking-dialog-actions .btn{width:100%}
+  .ranking-header-button .updates-button-label{display:none}
+  .ranking-header-button{width:42px;padding:0}
+}
