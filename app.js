@@ -2520,13 +2520,83 @@ function setProfileRankPopover(open) {
   el.profileRankCard.setAttribute("aria-hidden", open ? "false" : "true");
 }
 
+function rankingInitials(name) {
+  const words = String(name || "Usuário")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!words.length) return "U";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+}
+
+function safePublicAvatarUrl(value) {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) return "";
+
+  try {
+    const url = new URL(rawValue);
+    return url.protocol === "https:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 function normalizeRankingRow(row) {
+  const receivedMode = String(row?.avatar_mode || "initials").toLowerCase();
+  const avatarMode = ["google", "mascot", "initials"].includes(receivedMode)
+    ? receivedMode
+    : "initials";
+  const mascotId = MASCOTS[row?.mascot_id] ? row.mascot_id : DEFAULT_MASCOT;
+  const avatarUrl = safePublicAvatarUrl(row?.avatar_url);
+
   return {
     position: Math.max(1, Number(row?.position) || 1),
     displayName: String(row?.display_name || "Usuário").trim() || "Usuário",
     medalCount: Math.max(0, Number(row?.medal_count) || 0),
+    avatarMode: avatarMode === "google" && !avatarUrl ? "mascot" : avatarMode,
+    avatarUrl,
+    mascotId,
     isCurrentUser: row?.is_current_user === true
   };
+}
+
+function publicRankingAvatarMarkup(row, extraClass = "") {
+  const safeName = escapeRankingText(row.displayName);
+  const safeInitials = escapeRankingText(rankingInitials(row.displayName));
+  const classes = `public-ranking-avatar ${extraClass}`.trim();
+
+  if (row.avatarMode === "google" && row.avatarUrl) {
+    const safeUrl = escapeRankingText(row.avatarUrl);
+    return `
+      <span class="${classes} avatar-mode-google" title="${safeName}" aria-label="Avatar de ${safeName}">
+        <span class="public-avatar-fallback" aria-hidden="true">${safeInitials}</span>
+        <img
+          src="${safeUrl}"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerpolicy="no-referrer"
+          onerror="this.hidden=true;this.parentElement.classList.add('avatar-load-failed')"
+        />
+      </span>
+    `;
+  }
+
+  if (row.avatarMode === "mascot") {
+    return `
+      <span class="${classes} avatar-mode-mascot" title="${safeName}" aria-label="Avatar de ${safeName}">
+        ${mascotMarkup(row.mascotId)}
+      </span>
+    `;
+  }
+
+  return `
+    <span class="${classes} avatar-mode-initials" title="${safeName}" aria-label="Avatar de ${safeName}">
+      <span class="public-avatar-fallback">${safeInitials}</span>
+    </span>
+  `;
 }
 
 function rankingRowMarkup(row, options = {}) {
@@ -2542,6 +2612,7 @@ function rankingRowMarkup(row, options = {}) {
     <li class="ranking-row rank-tier-${tier.key} ${row.isCurrentUser ? "current-user" : ""}${separated}">
       <span class="ranking-position">${row.position}º</span>
       <span class="ranking-person">
+        ${publicRankingAvatarMarkup(row, "ranking-avatar")}
         <span class="ranking-person-copy">
           <strong class="ranking-name" data-rank-name="${safeName}">${safeName}</strong>
           <small class="ranking-title">${tier.icon} ${tier.title}</small>
@@ -2709,17 +2780,6 @@ function cupPreviewMonthLabel() {
   }).format(now).replace(/^./, (character) => character.toUpperCase());
 }
 
-function cupPreviewInitials(name) {
-  const words = String(name || "Usuário")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (!words.length) return "U";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
-}
-
 function cupPreviewFallbackRows() {
   const user = accounts()[currentUser];
   const ownName = displayName(user);
@@ -2729,6 +2789,9 @@ function cupPreviewFallbackRows() {
     position: index + 1,
     displayName: name,
     medalCount: Math.max(0, 37 - index * 4),
+    avatarMode: index === 0 ? "mascot" : "initials",
+    avatarUrl: "",
+    mascotId: index === 0 && user ? ensureMascot(user) : DEFAULT_MASCOT,
     isCurrentUser: index === 0
   }));
 }
@@ -2746,17 +2809,7 @@ function cupPreviewRows() {
 }
 
 function cupPreviewAvatarMarkup(row) {
-  const safeName = escapeRankingText(row.displayName);
-
-  if (row.isCurrentUser) {
-    const user = accounts()[currentUser];
-    if (user) {
-      return `<span class="cup-avatar cup-avatar-mascot" title="${safeName}">${mascotMarkup(ensureMascot(user))}</span>`;
-    }
-  }
-
-  const safeInitials = escapeRankingText(cupPreviewInitials(row.displayName));
-  return `<span class="cup-avatar cup-avatar-initials" title="${safeName}">${safeInitials}</span>`;
+  return publicRankingAvatarMarkup(row, "cup-avatar");
 }
 
 function cupPodiumMarkup(row) {

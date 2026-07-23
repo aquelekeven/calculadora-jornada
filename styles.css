@@ -5553,3 +5553,74 @@ html[data-theme="dark"] .cup-my-result{
   background:color-mix(in srgb,var(--rank-color) 8%,#172019);
 }
 html[data-theme="dark"] .cup-my-result strong{color:color-mix(in srgb,var(--rank-color) 70%,#fff)}
+
+/* V2.5.2 TESTE · Avatares públicos no ranking e na prévia da Copa */
+.public-ranking-avatar{
+  position:relative;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  flex:0 0 auto;
+  border-radius:50%;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--rank-color) 24%,var(--card-solid)),var(--bg-soft));
+  color:var(--rank-deep);
+  font-weight:950;
+  letter-spacing:.025em;
+  isolation:isolate;
+}
+.public-ranking-avatar>img,
+.public-ranking-avatar>.mascot-image{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.public-ranking-avatar>.mascot-image{
+  transform:scale(1.04);
+}
+.public-avatar-fallback{
+  position:relative;
+  z-index:1;
+  display:grid;
+  width:100%;
+  height:100%;
+  place-items:center;
+}
+.public-ranking-avatar.avatar-load-failed>img{display:none}
+
+.ranking-avatar{
+  width:34px;
+  height:34px;
+  border:2px solid color-mix(in srgb,var(--rank-color) 55%,var(--card-solid));
+  font-size:.58rem;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb,var(--rank-color) 9%,transparent),
+    0 5px 12px rgba(16,34,23,.11);
+}
+.ranking-person{gap:9px}
+.ranking-dialog .ranking-avatar{
+  width:39px;
+  height:39px;
+  font-size:.64rem;
+}
+.ranking-row.current-user .ranking-avatar{
+  box-shadow:
+    0 0 0 4px color-mix(in srgb,var(--rank-color) 13%,transparent),
+    0 0 18px color-mix(in srgb,var(--rank-color) 20%,transparent);
+}
+
+/* A classe cup-avatar já controla tamanho, borda e glow. */
+.cup-avatar.public-ranking-avatar>.mascot-image{
+  transform:scale(1.04);
+}
+.cup-avatar.public-ranking-avatar.avatar-mode-google>img{
+  transform:scale(1.01);
+}
+
+@media(max-width:620px){
+  .ranking-avatar{width:32px;height:32px}
+  .ranking-dialog .ranking-avatar{width:36px;height:36px}
+  .ranking-person{gap:7px}
+}
