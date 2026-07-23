@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.6";
+const APP_RELEASE_ID = "v2.6.1";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -280,7 +280,6 @@ const el = {
   accountRankPosition: $("accountRankPosition"),
   accountRankTitle: $("accountRankTitle"),
   accountRankPoints: $("accountRankPoints"),
-  accountRankMedals: $("accountRankMedals"),
   accountRankStatus: $("accountRankStatus"),
   accountRankingParticipation: $("accountRankingParticipation"),
   publicAvatarOptions: $("publicAvatarOptions"),
@@ -2470,15 +2469,8 @@ function currentRankingRow() {
   return medalRankingRows.find((row) => row.isCurrentUser) || null;
 }
 
-function localMedalCount() {
-  const user = accounts()[currentUser];
-  return achievementUnlockedCount(user?.achievementState || {});
-}
-
-
 function personalRankingSummary() {
   const current = currentRankingRow();
-  const medalCount = localMedalCount();
   const points = current?.points ?? monthlyPointsCurrentTotal;
   const resolvedPosition = current?.position ?? monthlyPointsCurrentPosition;
 
@@ -2487,7 +2479,6 @@ function personalRankingSummary() {
       tier: { key: "common", title: "Carregando…", icon: "…" },
       position: "—",
       points,
-      medalCount,
       shortTitle: "Carregando seu rank…",
       status: "Buscando sua colocação na temporada atual."
     };
@@ -2498,7 +2489,6 @@ function personalRankingSummary() {
       tier: { key: "hidden", title: "Fora do ranking", icon: "○" },
       position: "—",
       points,
-      medalCount,
       shortTitle: "Fora do ranking",
       status: "Você está oculto para os demais, mas continua vendo seus pontos e a classificação."
     };
@@ -2510,7 +2500,6 @@ function personalRankingSummary() {
       tier,
       position: `${resolvedPosition}º lugar`,
       points,
-      medalCount,
       shortTitle: `${resolvedPosition}º lugar · ${tier.title}`,
       status: `Temporada de ${pointsMonthLabel(currentMonthKey())}: sua posição usa somente o total mensal de pontos.`
     };
@@ -2521,7 +2510,6 @@ function personalRankingSummary() {
       tier: { key: "common", title: "Rank indisponível", icon: "!" },
       position: "—",
       points,
-      medalCount,
       shortTitle: "Rank indisponível",
       status: medalRankingError
     };
@@ -2531,7 +2519,6 @@ function personalRankingSummary() {
     tier: { key: "common", title: "CLT Comum", icon: "●" },
     position: "Aguardando",
     points,
-    medalCount,
     shortTitle: "Aguardando pontuação",
     status: "Registre ou classifique os dias do mês para entrar na temporada."
   };
@@ -2540,7 +2527,6 @@ function personalRankingSummary() {
 
 function renderPersonalRankingSummary() {
   const summary = personalRankingSummary();
-  const medalLabel = summary.medalCount === 1 ? "medalha" : "medalhas";
   const pointsLabel = summary.points === 1 ? "ponto" : "pontos";
 
   applyRankTierClass(el.profileRankCard, summary.tier.key);
@@ -2549,7 +2535,7 @@ function renderPersonalRankingSummary() {
 
   if (el.profileRankTitle) el.profileRankTitle.textContent = summary.shortTitle;
   if (el.profileRankMeta) {
-    el.profileRankMeta.textContent = `${summary.points} ${pointsLabel} · ${summary.medalCount} ${medalLabel}`;
+    el.profileRankMeta.textContent = `${summary.points} ${pointsLabel} em ${pointsMonthLabel(currentMonthKey())}`;
   }
 
   if (el.accountRankingBadge) {
@@ -2558,7 +2544,6 @@ function renderPersonalRankingSummary() {
   if (el.accountRankPosition) el.accountRankPosition.textContent = summary.position;
   if (el.accountRankTitle) el.accountRankTitle.textContent = summary.tier.title;
   if (el.accountRankPoints) el.accountRankPoints.textContent = String(summary.points);
-  if (el.accountRankMedals) el.accountRankMedals.textContent = String(summary.medalCount);
   if (el.accountRankStatus) el.accountRankStatus.textContent = summary.status;
 
   if (el.accountRankingParticipation) {
@@ -2843,8 +2828,7 @@ function monthlyPointsCategoryIcon(category) {
     journey: "⏱",
     lunch: "🍽",
     negative: "↘",
-    weekly: "📅",
-    medal: "🏅"
+    weekly: "📅"
   };
   return icons[category] || "•";
 }
@@ -2955,7 +2939,7 @@ async function loadMonthlyPointsStatement(monthKey = currentMonthKey(), { quiet 
     console.error("Falha ao carregar o extrato privado de pontos.", error);
     monthlyPointsStatementRows = [];
     monthlyPointsStatementError = navigator.onLine
-      ? "Extrato indisponível. Confira se o SQL da V2.6 foi executado."
+      ? "Extrato indisponível. Confira se o SQL de pontos mensais foi executado."
       : "Sem conexão para carregar seu extrato.";
   } finally {
     monthlyPointsStatementLoading = false;
@@ -3160,7 +3144,7 @@ async function loadMedalRanking({ quiet = false } = {}) {
     console.error("Falha ao carregar o ranking mensal de pontos.", error);
     medalRankingAvailable = false;
     medalRankingError = navigator.onLine
-      ? "Ranking de pontos indisponível. Confira se o SQL da V2.6 foi executado."
+      ? "Ranking de pontos indisponível. Confira se o SQL de pontos mensais foi executado."
       : "Sem conexão para atualizar a temporada.";
     medalRankingAvatarSettingsError = medalRankingError;
   } finally {

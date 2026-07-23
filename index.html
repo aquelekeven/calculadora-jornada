@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.6-pontos-mensais" />
+  <link rel="stylesheet" href="styles.css?v=2.6.1-sem-medalhas" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -788,10 +788,6 @@
               <small>Pontos do mês</small>
               <strong id="accountRankPoints">0</strong>
             </article>
-            <article>
-              <small>Medalhas totais</small>
-              <strong id="accountRankMedals">0</strong>
-            </article>
           </div>
 
           <p id="accountRankStatus" class="muted account-ranking-status">
@@ -1072,40 +1068,29 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.6</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.6.1</h2>
         </div>
-        <span class="release-pill">V2.6</span>
+        <span class="release-pill">V2.6.1</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">⚡</span>
+        <span class="release-note-icon" aria-hidden="true">⚖️</span>
         <div>
-          <strong>Temporada mensal por pontos</strong>
+          <strong>Medalhas separadas da competição</strong>
           <p>
-            O ranking agora premia jornadas próximas de 8 horas, almoço alinhado,
-            semanas de 40 horas, medalhas novas e também considera saldos negativos.
+            Medalhas continuam disponíveis como conquistas pessoais, mas não geram pontos
+            e não interferem na colocação da Liga CLT.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">🔒</span>
+        <span class="release-note-icon" aria-hidden="true">⏱️</span>
         <div>
-          <strong>Extrato visível somente para você</strong>
+          <strong>Ranking baseado somente na jornada</strong>
           <p>
-            Em Minha conta, cada lançamento aparece com data, motivo e pontuação.
-            No ranking público, os outros participantes veem apenas o total de pontos.
-          </p>
-        </div>
-      </section>
-
-      <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">🏅</span>
-        <div>
-          <strong>Medalhas continuam valendo</strong>
-          <p>
-            Cada medalha nova vale pontos na temporada, enquanto sua coleção histórica
-            permanece intacta na área de conquistas.
+            A temporada considera apenas jornada diária, almoço, saldo negativo e
+            fechamento semanal de 40 horas.
           </p>
         </div>
       </section>
@@ -1381,6 +1366,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.6-pontos-mensais"></script>
+  <script src="app.js?v=2.6.1-sem-medalhas"></script>
 </body>
 </html>

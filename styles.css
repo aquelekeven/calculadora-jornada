@@ -5783,7 +5783,7 @@ html[data-theme="dark"] .cup-my-result strong{color:color-mix(in srgb,var(--rank
   .public-avatar-option{transition:none}
 }
 
-/* V2.6 · Temporada mensal e extrato privado de pontos */
+/* V2.6.1 · Temporada mensal sem influência das medalhas */
 .ranking-period-label{
   display:inline-flex;
   margin-top:5px;
@@ -5796,7 +5796,7 @@ html[data-theme="dark"] .cup-my-result strong{color:color-mix(in srgb,var(--rank
   color:var(--rank-deep);
 }
 .account-ranking-grid{
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
 }
 .monthly-points-statement-card{
   position:relative;
