@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.4";
+const APP_RELEASE_ID = "v2.5.3";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -280,6 +280,14 @@ const el = {
   accountRankMedals: $("accountRankMedals"),
   accountRankStatus: $("accountRankStatus"),
   accountRankingParticipation: $("accountRankingParticipation"),
+  publicAvatarOptions: $("publicAvatarOptions"),
+  avatarModeGoogle: $("avatarModeGoogle"),
+  avatarModeMascot: $("avatarModeMascot"),
+  avatarModeInitials: $("avatarModeInitials"),
+  avatarModeGooglePreview: $("avatarModeGooglePreview"),
+  avatarModeMascotPreview: $("avatarModeMascotPreview"),
+  avatarModeInitialsPreview: $("avatarModeInitialsPreview"),
+  publicAvatarSettingsStatus: $("publicAvatarSettingsStatus"),
   closeRanking: $("closeRanking"),
   privacyDialog: $("privacyDialog"),
   termsDialog: $("termsDialog"),
@@ -487,6 +495,10 @@ let medalRankingAvailable = false;
 let medalRankingLoading = false;
 let medalRankingError = "";
 let medalRankingRefreshTimer = null;
+let medalRankingAvatarMode = "initials";
+let medalRankingGoogleAvatarAvailable = false;
+let medalRankingAvatarSettingsLoading = false;
+let medalRankingAvatarSettingsError = "";
 
 function accounts() {
   return cloudAccountsCache;
@@ -784,6 +796,10 @@ function resetCloudInterface() {
   medalRankingAvailable = false;
   medalRankingLoading = false;
   medalRankingError = "";
+  medalRankingAvatarMode = "initials";
+  medalRankingGoogleAvatarAvailable = false;
+  medalRankingAvatarSettingsLoading = false;
+  medalRankingAvatarSettingsError = "";
   el.rankingDock?.classList.add("hidden");
   if (el.rankingDialog?.open) el.rankingDialog.close();
   localStorage.removeItem(STORE);
@@ -1387,6 +1403,7 @@ function updateAccountInterface() {
   renderPalettePicker();
   loadSalarySettings(user);
   renderPersonalRankingSummary();
+  renderPublicAvatarSettings();
 }
 
 function selectMascot(mascotId) {
@@ -2599,6 +2616,171 @@ function publicRankingAvatarMarkup(row, extraClass = "") {
   `;
 }
 
+
+function ownGoogleAvatarUrl() {
+  const metadata = authSession?.user?.user_metadata || {};
+  return safePublicAvatarUrl(
+    metadata.picture ||
+    metadata.avatar_url ||
+    metadata.photo_url ||
+    ""
+  );
+}
+
+function normalizePublicAvatarMode(value) {
+  const mode = String(value || "initials").toLowerCase();
+  return ["google", "mascot", "initials"].includes(mode)
+    ? mode
+    : "initials";
+}
+
+function publicAvatarModeLabel(mode) {
+  if (mode === "google") return "Foto do Google";
+  if (mode === "mascot") return "Mascote do aplicativo";
+  return "Apenas iniciais";
+}
+
+function publicAvatarPreviewRow(mode) {
+  const user = accounts()[currentUser];
+  const name = displayName(user);
+  const googleUrl = ownGoogleAvatarUrl();
+
+  return {
+    position: currentRankingRow()?.position || 4,
+    displayName: name,
+    medalCount: localMedalCount(),
+    avatarMode: mode,
+    avatarUrl: mode === "google" ? googleUrl : "",
+    mascotId: ensureMascot(user),
+    isCurrentUser: true
+  };
+}
+
+function renderPublicAvatarSettings() {
+  if (!el.publicAvatarOptions) return;
+
+  const user = accounts()[currentUser];
+  if (!user) return;
+
+  const googleUrl = ownGoogleAvatarUrl();
+  const googleAvailable = medalRankingGoogleAvatarAvailable;
+  const loading = medalRankingAvatarSettingsLoading || medalRankingLoading;
+  const rankingUnavailable = !medalRankingAvailable && !medalRankingLoading;
+
+  if (el.avatarModeGooglePreview) {
+    el.avatarModeGooglePreview.innerHTML = googleUrl
+      ? publicRankingAvatarMarkup(publicAvatarPreviewRow("google"), "public-avatar-choice-image")
+      : '<span class="public-avatar-choice-placeholder" aria-hidden="true">G</span>';
+  }
+  if (el.avatarModeMascotPreview) {
+    el.avatarModeMascotPreview.innerHTML = publicRankingAvatarMarkup(
+      publicAvatarPreviewRow("mascot"),
+      "public-avatar-choice-image"
+    );
+  }
+  if (el.avatarModeInitialsPreview) {
+    el.avatarModeInitialsPreview.innerHTML = publicRankingAvatarMarkup(
+      publicAvatarPreviewRow("initials"),
+      "public-avatar-choice-image"
+    );
+  }
+
+  [
+    [el.avatarModeGoogle, "google"],
+    [el.avatarModeMascot, "mascot"],
+    [el.avatarModeInitials, "initials"]
+  ].forEach(([button, mode]) => {
+    if (!button) return;
+    const selected = medalRankingAvatarMode === mode;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", selected ? "true" : "false");
+    button.disabled = loading || rankingUnavailable || (mode === "google" && !googleAvailable);
+  });
+
+  if (!el.publicAvatarSettingsStatus) return;
+
+  el.publicAvatarSettingsStatus.classList.toggle(
+    "error",
+    Boolean(medalRankingAvatarSettingsError)
+  );
+
+  if (medalRankingAvatarSettingsError) {
+    el.publicAvatarSettingsStatus.textContent = medalRankingAvatarSettingsError;
+    return;
+  }
+
+  if (loading) {
+    el.publicAvatarSettingsStatus.textContent = "Carregando sua preferência de avatar…";
+    return;
+  }
+
+  if (rankingUnavailable) {
+    el.publicAvatarSettingsStatus.textContent = "A configuração ficará disponível quando o ranking conectar.";
+    return;
+  }
+
+  const googleHint = medalRankingGoogleAvatarAvailable && !googleUrl
+    ? " A foto existe no perfil, mas o navegador não conseguiu montar a prévia agora."
+    : "";
+
+  el.publicAvatarSettingsStatus.textContent =
+    `Visível no ranking: ${publicAvatarModeLabel(medalRankingAvatarMode)}.${googleHint}`;
+}
+
+async function setPublicRankingAvatarMode(mode) {
+  const normalizedMode = normalizePublicAvatarMode(mode);
+
+  if (
+    medalRankingAvatarSettingsLoading ||
+    !supabaseClient ||
+    !authSession ||
+    !medalRankingAvailable
+  ) return;
+
+  if (normalizedMode === medalRankingAvatarMode) return;
+
+  if (normalizedMode === "google" && !medalRankingGoogleAvatarAvailable) {
+    toast("Sua conta Google não disponibilizou uma foto para o ranking.", "error");
+    return;
+  }
+
+  medalRankingAvatarSettingsLoading = true;
+  medalRankingAvatarSettingsError = "";
+  renderPublicAvatarSettings();
+
+  try {
+    const { data, error } = await supabaseClient.rpc(
+      "set_my_medal_ranking_avatar_mode",
+      { p_avatar_mode: normalizedMode }
+    );
+
+    if (error) throw error;
+
+    medalRankingAvatarMode = normalizePublicAvatarMode(data || normalizedMode);
+
+    const current = currentRankingRow();
+    if (current) {
+      current.avatarMode = medalRankingAvatarMode;
+      current.avatarUrl = medalRankingAvatarMode === "google"
+        ? ownGoogleAvatarUrl()
+        : "";
+      current.mascotId = ensureMascot(accounts()[currentUser]);
+    }
+
+    renderMedalRanking();
+    toast(`Avatar público alterado para ${publicAvatarModeLabel(medalRankingAvatarMode)}.`);
+
+    await loadMedalRanking({ quiet: true });
+  } catch (error) {
+    console.error("Falha ao alterar o avatar público do ranking.", error);
+    medalRankingAvatarSettingsError = "Não foi possível salvar o avatar público agora.";
+    toast("Não foi possível alterar o avatar público.", "error");
+  } finally {
+    medalRankingAvatarSettingsLoading = false;
+    renderPublicAvatarSettings();
+  }
+}
+
 function rankingRowMarkup(row, options = {}) {
   const medalLabel = row.medalCount === 1 ? "medalha" : "medalhas";
   const tier = rankTierForPosition(row.position);
@@ -2687,6 +2869,7 @@ function renderMedalRanking() {
     if (el.rankingDockList) el.rankingDockList.innerHTML = empty;
     if (el.rankingDialogList) el.rankingDialogList.innerHTML = empty;
     renderPersonalRankingSummary();
+    renderPublicAvatarSettings();
     return;
   }
 
@@ -2712,6 +2895,7 @@ function renderMedalRanking() {
   }
 
   renderPersonalRankingSummary();
+  renderPublicAvatarSettings();
 }
 
 function scheduleMedalRankingRefresh(delay = 350) {
@@ -2728,23 +2912,38 @@ async function loadMedalRanking({ quiet = false } = {}) {
 
   if (!quiet) {
     medalRankingLoading = true;
+    medalRankingAvatarSettingsLoading = true;
     medalRankingError = "";
+    medalRankingAvatarSettingsError = "";
     renderMedalRanking();
   }
 
   try {
-    const [rankingResult, statusResult] = await Promise.all([
+    const [rankingResult, statusResult, avatarSettingsResult] = await Promise.all([
       supabaseClient.rpc("get_medal_ranking", { p_limit: 10 }),
-      supabaseClient.rpc("get_my_medal_ranking_status")
+      supabaseClient.rpc("get_my_medal_ranking_status"),
+      supabaseClient.rpc("get_my_medal_ranking_avatar_settings")
     ]);
 
     if (rankingResult.error) throw rankingResult.error;
     if (statusResult.error) throw statusResult.error;
+    if (avatarSettingsResult.error) throw avatarSettingsResult.error;
 
     medalRankingRows = Array.isArray(rankingResult.data)
       ? rankingResult.data.map(normalizeRankingRow)
       : [];
     medalRankingParticipates = statusResult.data !== false;
+
+    const avatarSettings = Array.isArray(avatarSettingsResult.data)
+      ? avatarSettingsResult.data[0]
+      : avatarSettingsResult.data;
+
+    const current = currentRankingRow();
+    medalRankingAvatarMode = normalizePublicAvatarMode(
+      avatarSettings?.avatar_mode || current?.avatarMode || "initials"
+    );
+    medalRankingGoogleAvatarAvailable = avatarSettings?.google_avatar_available === true;
+    medalRankingAvatarSettingsError = "";
     medalRankingAvailable = true;
     medalRankingError = "";
   } catch (error) {
@@ -2753,8 +2952,10 @@ async function loadMedalRanking({ quiet = false } = {}) {
     medalRankingError = navigator.onLine
       ? "Ranking indisponível. Confira se o SQL do ranking foi executado."
       : "Sem conexão para atualizar o ranking.";
+    medalRankingAvatarSettingsError = medalRankingError;
   } finally {
     medalRankingLoading = false;
+    medalRankingAvatarSettingsLoading = false;
     renderMedalRanking();
   }
 }
@@ -6712,6 +6913,11 @@ el.closeRanking?.addEventListener("click", closeRankingDialog);
 el.rankingDockParticipation?.addEventListener("click", toggleMedalRankingParticipation);
 el.rankingDialogParticipation?.addEventListener("click", toggleMedalRankingParticipation);
 el.accountRankingParticipation?.addEventListener("click", toggleMedalRankingParticipation);
+el.publicAvatarOptions?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-avatar-mode]");
+  if (!button || button.disabled) return;
+  setPublicRankingAvatarMode(button.dataset.avatarMode);
+});
 el.openCupPreview?.addEventListener("click", openCupPreview);
 el.closeCupResultTop?.addEventListener("click", () => closeCupPreview());
 el.closeCupResult?.addEventListener("click", () => closeCupPreview());

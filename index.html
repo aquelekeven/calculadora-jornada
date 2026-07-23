@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.5.2-avatar-test" />
+  <link rel="stylesheet" href="styles.css?v=2.5.3-avatar-choice-test" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -799,11 +799,59 @@
           </button>
         </section>
 
+        <section class="card block public-avatar-settings-card">
+          <header class="public-avatar-settings-head">
+            <div>
+              <p class="eyebrow">Privacidade do ranking</p>
+              <h2>Avatar público</h2>
+            </div>
+            <span class="public-avatar-visibility-badge">Só dentro do app</span>
+          </header>
+
+          <p class="muted section-description">
+            Escolha como você aparece para os outros participantes. Essa preferência altera
+            somente o ranking e a Copa; sua foto e seu mascote pessoais continuam iguais.
+          </p>
+
+          <div id="publicAvatarOptions" class="public-avatar-options" aria-label="Escolha do avatar público">
+            <button id="avatarModeGoogle" class="public-avatar-option" data-avatar-mode="google" type="button" aria-pressed="false">
+              <span id="avatarModeGooglePreview" class="public-avatar-choice-preview" aria-hidden="true"></span>
+              <span class="public-avatar-choice-copy">
+                <strong>Foto do Google</strong>
+                <small>Usa a imagem da conta conectada.</small>
+              </span>
+              <span class="public-avatar-choice-check" aria-hidden="true">✓</span>
+            </button>
+
+            <button id="avatarModeMascot" class="public-avatar-option" data-avatar-mode="mascot" type="button" aria-pressed="false">
+              <span id="avatarModeMascotPreview" class="public-avatar-choice-preview" aria-hidden="true"></span>
+              <span class="public-avatar-choice-copy">
+                <strong>Meu mascote</strong>
+                <small>Usa o personagem selecionado abaixo.</small>
+              </span>
+              <span class="public-avatar-choice-check" aria-hidden="true">✓</span>
+            </button>
+
+            <button id="avatarModeInitials" class="public-avatar-option" data-avatar-mode="initials" type="button" aria-pressed="false">
+              <span id="avatarModeInitialsPreview" class="public-avatar-choice-preview" aria-hidden="true"></span>
+              <span class="public-avatar-choice-copy">
+                <strong>Apenas iniciais</strong>
+                <small>Opção mais discreta, sem imagem.</small>
+              </span>
+              <span class="public-avatar-choice-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+
+          <p id="publicAvatarSettingsStatus" class="public-avatar-settings-status" role="status" aria-live="polite">
+            Carregando sua preferência de avatar…
+          </p>
+        </section>
+
         <section class="card block">
           <p class="eyebrow">Foto de perfil</p>
           <h2>Escolha seu mascote</h2>
           <p class="muted section-description">
-            São três personagens padrões em estilo de ilustração. O desenho escolhido aparece corretamente no cabeçalho e na sua conta.
+            São quatro personagens em estilo de ilustração. O desenho escolhido aparece corretamente no cabeçalho e na sua conta.
           </p>
           <div id="mascotGrid" class="mascot-grid" aria-label="Escolha de mascote"></div>
 
@@ -988,40 +1036,29 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.4</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.5.3</h2>
         </div>
-        <span class="release-pill">V2.4</span>
+        <span class="release-pill">V2.5.3</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">💎</span>
-        <div>
-          <strong>Cargos da Liga CLT</strong>
-          <p>
-            O primeiro colocado agora é CLT Pro Max, o segundo é CLT Premium,
-            o terceiro é CLT Dedicado e, do quarto em diante, CLT Comum.
-          </p>
-        </div>
-      </section>
-
-      <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">✦</span>
-        <div>
-          <strong>Cores e brilho por colocação</strong>
-          <p>
-            Diamante, ouro, bronze e cinza identificam cada nível, com uma animação
-            discreta no nome dos participantes.
-          </p>
-        </div>
-      </section>
-
-      <section class="release-note">
         <span class="release-note-icon" aria-hidden="true">👤</span>
         <div>
-          <strong>Seu rank sempre à mão</strong>
+          <strong>Você escolhe como aparece</strong>
           <p>
-            Passe o mouse ou toque na foto do perfil para ver um resumo. A área Minha conta
-            também exibe sua posição, título e quantidade de medalhas.
+            Em Minha conta, agora é possível usar a foto do Google, seu mascote
+            ou apenas as iniciais no ranking e na prévia da Copa.
+          </p>
+        </div>
+      </section>
+
+      <section class="release-note">
+        <span class="release-note-icon" aria-hidden="true">🔒</span>
+        <div>
+          <strong>Preferência individual e privada</strong>
+          <p>
+            A escolha afeta somente seu avatar público dentro do aplicativo.
+            Horários e demais informações da jornada continuam protegidos.
           </p>
         </div>
       </section>
@@ -1049,7 +1086,7 @@
       <aside class="ranking-privacy-note">
         <strong>O que fica visível?</strong>
         <p>
-          Somente o primeiro nome, a inicial do sobrenome e a quantidade de medalhas.
+          Somente o primeiro nome, a inicial do sobrenome, o avatar escolhido e a quantidade de medalhas.
           Horários, faltas, abonos, comentários e outros dados da jornada não entram no ranking.
         </p>
       </aside>
@@ -1268,8 +1305,8 @@
       </p>
       <p>
         O ranking de medalhas é ativado automaticamente e divulga somente o primeiro nome,
-        a inicial do sobrenome e a quantidade de medalhas. A participação pode ser desativada
-        ou reativada pelo próprio usuário dentro da área do ranking.
+        a inicial do sobrenome, o avatar escolhido e a quantidade de medalhas. A participação
+        e o tipo de avatar podem ser alterados pelo próprio usuário em Minha conta.
       </p>
       <button class="btn primary closePrivacyNotice" type="button">Entendi</button>
     </div>
@@ -1296,6 +1333,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.5.2-avatar-test"></script>
+  <script src="app.js?v=2.5.3-avatar-choice-test"></script>
 </body>
 </html>

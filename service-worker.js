@@ -1,5 +1,5 @@
-const CACHE="jornada-fb-google-cloud-v2-5-2-ranking-avatars-test";
-const FILES=["./","./index.html","./styles.css?v=2.5.2-avatar-test","./app.js?v=2.5.2-avatar-test","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.png","./mascot-pato.png","./mascot-coelha.png","./mascot-coruja.png"];
+const CACHE="jornada-fb-google-cloud-v2-5-3-avatar-choice-test";
+const FILES=["./","./index.html","./styles.css?v=2.5.3-avatar-choice-test","./app.js?v=2.5.3-avatar-choice-test","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.png","./mascot-pato.png","./mascot-coelha.png","./mascot-coruja.png"];
 
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)));
