@@ -296,19 +296,21 @@
           </div>
         </section>
 
-        <section class="metrics">
+        <section class="metrics exit-window-metrics">
           <article class="metric">
-            <span>Trabalhado antes do almoço</span>
-            <strong id="todayMorning">—</strong>
-          </article>
-          <article class="metric">
-            <span>Saída exata para 8 horas</span>
-            <strong id="todayExactExit">—</strong>
-          </article>
-          <article class="metric">
-            <span>Pode sair a partir de</span>
+            <span>Horário mínimo de saída</span>
             <strong id="todayToleranceExit">—</strong>
-            <small>Com 10 minutos de tolerância</small>
+            <small>Antes disso, o saldo fica negativo.</small>
+          </article>
+          <article class="metric">
+            <span>Horário normal de saída · 8h</span>
+            <strong id="todayExactExit">—</strong>
+            <small>Completa exatamente a jornada diária.</small>
+          </article>
+          <article class="metric">
+            <span>Horário máximo de saída</span>
+            <strong id="todayMaxExit">—</strong>
+            <small>Depois disso, começa a contar hora extra.</small>
           </article>
         </section>
 
@@ -352,18 +354,40 @@
           <div class="paste-row">
             <label>
               Texto do ponto
-              <textarea id="recordPastedText" placeholder="Ex.: 11:09 - 11:40	12:58 - 18:43"></textarea>
+              <textarea id="recordPastedText" placeholder="Ex.: 11:09 - 11:40 12:58 - 18:43"></textarea>
             </label>
             <button id="parseRecordText" class="btn primary paste-btn" type="button">Preencher registro</button>
           </div>
-          <p class="hint">Escolha a data no calendário e cole exatamente quatro horários: entrada, saída para almoço, volta do almoço e saída real. Espaços e tabulações são aceitos.</p>
+          <p id="recordPasteHint" class="hint">Escolha a data no calendário e cole exatamente quatro horários: entrada, saída para almoço, volta do almoço e saída real. Espaços e tabulações são aceitos.</p>
           <p id="recordParseStatus" class="status hidden"></p>
         </section>
 
         <section class="card block">
           <p class="eyebrow">Registro do dia</p>
           <h2>Data e horários</h2>
-          <div class="grid five">
+
+          <div class="record-mode-selector" role="radiogroup" aria-label="Formato do registro">
+            <label class="record-mode-option">
+              <input id="recordModeWithLunch" name="recordMode" type="radio" value="withLunch" checked />
+              <span>
+                <strong>Com intervalo</strong>
+                <small>Fluxo padrão com quatro batidas.</small>
+              </span>
+            </label>
+            <label class="record-mode-option">
+              <input id="recordModeNoLunch" name="recordMode" type="radio" value="noLunch" />
+              <span>
+                <strong>Sem intervalo</strong>
+                <small>Use somente em dias excepcionais com duas batidas.</small>
+              </span>
+            </label>
+          </div>
+
+          <p id="recordModeHint" class="record-mode-hint">
+            Com intervalo está selecionado por padrão.
+          </p>
+
+          <div id="recordFieldsGrid" class="grid five record-fields-grid">
             <div class="field-group">
               <span class="field-label">Data</span>
               <button id="datePickerButton" class="date-input" type="button" aria-haspopup="dialog">
@@ -376,8 +400,8 @@
               <input id="date" type="hidden" />
             </div>
             <label>Entrada<input id="recordEntry" type="time" /></label>
-            <label>Saída para almoço<input id="recordLunchOut" type="time" /></label>
-            <label>Volta do almoço<input id="recordLunchBack" type="time" /></label>
+            <label id="recordLunchOutField" class="record-lunch-field">Saída para almoço<input id="recordLunchOut" type="time" /></label>
+            <label id="recordLunchBackField" class="record-lunch-field">Volta do almoço<input id="recordLunchBack" type="time" /></label>
             <label>Saída real<input id="recordRealExit" type="time" /></label>
           </div>
         </section>
@@ -387,9 +411,10 @@
             <span>Total trabalhado</span>
             <strong id="recordTotal">—</strong>
           </article>
-          <article class="metric">
-            <span>Tempo de almoço</span>
+          <article id="recordLunchMetric" class="metric">
+            <span id="recordLunchMetricLabel">Tempo de almoço</span>
             <strong id="recordLunchTime">—</strong>
+            <small id="recordLunchMetricHint"></small>
           </article>
           <article id="recordBalanceMetric" class="metric neutral">
             <span>Saldo do dia</span>
@@ -863,7 +888,7 @@
 
       <footer class="footer disclaimer-footer">
         <strong>K 🤫</strong>
-        <em>Calculadora de Jornada · Ferramenta não oficial. Não substitui os sistemas da instituição.</em>
+        <em>Calculadora de Jornada · Ferramenta não oficial</em>
         <span>
           <button class="text-action openTermsNotice" type="button">Termos</button>
           <button class="text-action openPrivacyNotice" type="button">Privacidade</button>
@@ -877,47 +902,40 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.2</h2>
         </div>
-        <span class="release-pill">V2</span>
+        <span class="release-pill">V2.2</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">±</span>
+        <span class="release-note-icon" aria-hidden="true">↔</span>
         <div>
-          <strong>Tolerância para menos e para mais</strong>
+          <strong>Faixa completa de saída</strong>
           <p>
-            Diferenças de até 10 minutos, negativas ou positivas, agora são zeradas.
-            Ao passar do limite, o saldo completo do dia é contabilizado.
+            A aba “Hora de sair” agora mostra os horários mínimo, normal de 8 horas e máximo.
+            Depois do máximo, o saldo positivo passa a ser contabilizado integralmente.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M12 3.5 20 7v5c0 4.3-2.8 7.2-8 8.8C6.8 19.2 4 16.3 4 12V7l8-3.5Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>
-        </span>
+        <span class="release-note-icon" aria-hidden="true">2×</span>
         <div>
-          <strong>Abono em dias negativos</strong>
-          <p>Abone todo o saldo negativo ou apenas uma parte e registre um motivo opcional.</p>
+          <strong>Registro sem intervalo</strong>
+          <p>
+            Dias excepcionais podem ser lançados somente com entrada e saída.
+            O saldo negativo continua disponível para abono no histórico.
+          </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path d="M5 5.5h14v11H9l-4 3v-14Z"/><path d="M8 9h8M8 12.5h5"/></svg>
-        </span>
+        <span class="release-note-icon" aria-hidden="true">4×</span>
         <div>
-          <strong>Anotações por dia</strong>
-          <p>Salve comentários pessoais em dias trabalhados, feriados, atestados e faltas.</p>
-        </div>
-      </section>
-
-      <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">✦</span>
-        <div>
-          <strong>Central de novidades</strong>
-          <p>Este botão avisará sempre que uma nova versão trouxer mudanças importantes.</p>
+          <strong>Fluxo padrão preservado</strong>
+          <p>
+            “Com intervalo” continua selecionado automaticamente para não atrapalhar o registro normal do dia a dia.
+          </p>
         </div>
       </section>
 

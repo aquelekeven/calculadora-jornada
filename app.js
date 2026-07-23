@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.1";
+const APP_RELEASE_ID = "v2.2";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -80,38 +80,6 @@ function initializeMathBurst() {
       triggerMathBurst(icon);
     });
   });
-}
-
-function updateReleaseNotesForMathBurst() {
-  const dialog = document.getElementById("updatesDialog");
-  if (!dialog) return;
-
-  const title = dialog.querySelector(".updates-dialog-head h2");
-  const pill = dialog.querySelector(".release-pill");
-  const firstNote = dialog.querySelector(".release-note");
-
-  if (title) title.textContent = "Calculadora de Jornada · V2.1";
-  if (pill) pill.textContent = "V2.1";
-
-  if (dialog.querySelector("[data-release-note='math-burst']")) return;
-
-  const note = document.createElement("section");
-  note.className = "release-note featured";
-  note.dataset.releaseNote = "math-burst";
-  note.innerHTML = `
-    <span class="release-note-icon" aria-hidden="true">∑</span>
-    <div>
-      <strong>Explosão matemática</strong>
-      <p>Clique no ícone da calculadora para soltar números e símbolos matemáticos pela tela.</p>
-    </div>
-  `;
-
-  if (firstNote) {
-    firstNote.classList.remove("featured");
-    firstNote.before(note);
-  } else {
-    dialog.querySelector(".updates-dialog-body")?.appendChild(note);
-  }
 }
 
 const DEFAULT_MASCOT = "panda";
@@ -390,9 +358,9 @@ const el = {
   todayTotalWorked: $("todayTotalWorked"),
   todayBalanceMetric: $("todayBalanceMetric"),
   todayBalance: $("todayBalance"),
-  todayMorning: $("todayMorning"),
   todayExactExit: $("todayExactExit"),
   todayToleranceExit: $("todayToleranceExit"),
+  todayMaxExit: $("todayMaxExit"),
   todayResult: $("todayResult"),
   todayResultLabel: $("todayResultLabel"),
   todayResultText: $("todayResultText"),
@@ -401,6 +369,13 @@ const el = {
   todayError: $("todayError"),
 
   recordPastedText: $("recordPastedText"),
+  recordPasteHint: $("recordPasteHint"),
+  recordModeWithLunch: $("recordModeWithLunch"),
+  recordModeNoLunch: $("recordModeNoLunch"),
+  recordModeHint: $("recordModeHint"),
+  recordFieldsGrid: $("recordFieldsGrid"),
+  recordLunchOutField: $("recordLunchOutField"),
+  recordLunchBackField: $("recordLunchBackField"),
   parseRecordText: $("parseRecordText"),
   recordParseStatus: $("recordParseStatus"),
   date: $("date"),
@@ -412,6 +387,9 @@ const el = {
   recordRealExit: $("recordRealExit"),
   recordTotal: $("recordTotal"),
   recordLunchTime: $("recordLunchTime"),
+  recordLunchMetric: $("recordLunchMetric"),
+  recordLunchMetricLabel: $("recordLunchMetricLabel"),
+  recordLunchMetricHint: $("recordLunchMetricHint"),
   recordBalanceMetric: $("recordBalanceMetric"),
   recordBalance: $("recordBalance"),
   recordResult: $("recordResult"),
@@ -1593,9 +1571,9 @@ function calculateToday() {
   el.todayRealMetrics.classList.toggle("hidden", !useRealExit);
 
   if ([entry, lunchOut, lunchBack].some((value) => value === null)) {
-    el.todayMorning.textContent = "—";
     el.todayExactExit.textContent = "—";
     el.todayToleranceExit.textContent = "—";
+    el.todayMaxExit.textContent = "—";
     el.todayTotalWorked.textContent = "—";
     el.todayBalance.textContent = "—";
     setMetricStatus(el.todayBalanceMetric, "neutral");
@@ -1615,17 +1593,19 @@ function calculateToday() {
   const morning = lunchOut - entry;
   const exactExit = lunchBack + (JOURNEY - morning);
   const toleranceExit = exactExit - TOLERANCE;
+  const maximumExit = exactExit + TOLERANCE;
 
-  el.todayMorning.textContent = duration(morning);
   el.todayExactExit.textContent = clock(exactExit);
   el.todayToleranceExit.textContent = clock(toleranceExit);
+  el.todayMaxExit.textContent = clock(maximumExit);
 
   if (!useRealExit) {
     el.todayResultLabel.textContent = "Pode sair a partir de";
     el.todayResultText.textContent =
       `Você pode sair às ${clock(toleranceExit)} sem gerar saldo negativo. ` +
       `Diferenças de até 10 minutos, para menos ou para mais, são consideradas zero. ` +
-      `Para completar 8 horas exatas, saia às ${clock(exactExit)}.`;
+      `Para completar 8 horas exatas, saia às ${clock(exactExit)}. ` +
+      `Até ${clock(maximumExit)}, a diferença positiva também permanece dentro da tolerância.`;
     el.todayResultValue.textContent = clock(toleranceExit);
     setResultStatus(el.todayResult, "blue");
     return;
@@ -1638,7 +1618,7 @@ function calculateToday() {
     setMetricStatus(el.todayBalanceMetric, "neutral");
     el.todayResultLabel.textContent = "Saída real";
     el.todayResultText.textContent =
-      `A saída calculada é ${clock(toleranceExit)} com tolerância ou ${clock(exactExit)} para completar 8 horas. ` +
+      `A faixa sem saldo vai de ${clock(toleranceExit)} até ${clock(maximumExit)}, com ${clock(exactExit)} para completar 8 horas. ` +
       `Informe sua saída real para calcular o saldo.`;
     el.todayResultValue.textContent = "—";
     setResultStatus(el.todayResult, "blue");
@@ -1782,6 +1762,9 @@ function prepareSpecialWorkEntry(date) {
   el.recordLunchBack.value = "";
   el.recordRealExit.value = "";
   el.recordParseStatus.classList.add("hidden");
+  el.recordModeWithLunch.checked = true;
+  el.recordModeNoLunch.checked = false;
+  applyRecordMode();
 
   setSelectedDate(date);
   showTab("record");
@@ -1798,8 +1781,51 @@ function prepareSpecialWorkEntry(date) {
   const type = specialWorkTypeForDate(date);
 
   toast(
-    `${specialWorkLabel(type)}: preencha os quatro horários de ${dateBR(date)}.`
+    `${specialWorkLabel(type)}: preencha os horários de ${dateBR(date)}.`
   );
+}
+
+function recordUsesLunchInterval() {
+  return el.recordModeNoLunch?.checked !== true;
+}
+
+function applyRecordMode({ clearLunch = false } = {}) {
+  const withLunch = recordUsesLunchInterval();
+
+  el.recordLunchOutField.classList.toggle("hidden", !withLunch);
+  el.recordLunchBackField.classList.toggle("hidden", !withLunch);
+  el.recordFieldsGrid.classList.toggle("no-lunch", !withLunch);
+
+  if (clearLunch && !withLunch) {
+    el.recordLunchOut.value = "";
+    el.recordLunchBack.value = "";
+  }
+
+  if (withLunch) {
+    el.recordPastedText.placeholder = "Ex.: 11:09 - 11:40 12:58 - 18:43";
+    el.recordPasteHint.textContent =
+      "Escolha a data no calendário e cole exatamente quatro horários: entrada, saída para almoço, volta do almoço e saída real. Espaços e tabulações são aceitos.";
+    el.recordModeHint.textContent =
+      "Com intervalo está selecionado por padrão.";
+    el.recordLunchMetricLabel.textContent = "Tempo de almoço";
+    el.recordLunchMetricHint.textContent = "";
+  } else {
+    el.recordPastedText.placeholder = "Ex.: 13:00 - 18:00";
+    el.recordPasteHint.textContent =
+      "Escolha a data no calendário e cole exatamente dois horários: entrada e saída real.";
+    el.recordModeHint.textContent =
+      "Modo excepcional: o total será calculado diretamente entre entrada e saída.";
+    el.recordLunchMetricLabel.textContent = "Intervalo";
+    el.recordLunchMetricHint.textContent = "Duas batidas registradas";
+  }
+
+  calculateRecord();
+}
+
+function resetRecordMode() {
+  el.recordModeWithLunch.checked = true;
+  el.recordModeNoLunch.checked = false;
+  applyRecordMode();
 }
 
 function calculateRecord() {
@@ -1807,6 +1833,7 @@ function calculateRecord() {
   lastRecord = null;
   el.saveDay.disabled = true;
 
+  const withLunch = recordUsesLunchInterval();
   const entry = toMinutes(el.recordEntry.value);
   const lunchOut = toMinutes(el.recordLunchOut.value);
   const lunchBack = toMinutes(el.recordLunchBack.value);
@@ -1815,26 +1842,29 @@ function calculateRecord() {
   const specialLabel = specialWorkType
     ? specialWorkLabel(specialWorkType)
     : null;
+  const requiredValues = withLunch
+    ? [entry, lunchOut, lunchBack, realExit]
+    : [entry, realExit];
+  const requiredCount = withLunch ? "quatro" : "dois";
 
   if (
     !el.date.value ||
-    [entry, lunchOut, lunchBack, realExit].some(
-      (value) => value === null
-    )
+    requiredValues.some((value) => value === null)
   ) {
     el.recordTotal.textContent = "—";
-    el.recordLunchTime.textContent = "—";
+    el.recordLunchTime.textContent = withLunch ? "—" : "Sem intervalo";
     el.recordBalance.textContent = "—";
     setMetricStatus(el.recordBalanceMetric, "neutral");
 
     if (specialWorkType) {
       el.recordResultLabel.textContent = specialLabel;
       el.recordResultText.textContent =
-        "Preencha os quatro horários. Todas as horas trabalhadas nesse dia entrarão como saldo positivo.";
+        `Preencha os ${requiredCount} horários. Todas as horas trabalhadas nesse dia entrarão como saldo positivo.`;
     } else {
       el.recordResultLabel.textContent = "Registro do dia";
-      el.recordResultText.textContent =
-        "Preencha a data e os quatro horários.";
+      el.recordResultText.textContent = withLunch
+        ? "Preencha a data e os quatro horários."
+        : "Preencha a data, a entrada e a saída real.";
     }
 
     el.recordResultValue.textContent = "—";
@@ -1847,21 +1877,23 @@ function calculateRecord() {
     return;
   }
 
-  const error = validateSequence(
-    entry,
-    lunchOut,
-    lunchBack,
-    realExit
-  );
+  let error = "";
+
+  if (withLunch) {
+    error = validateSequence(entry, lunchOut, lunchBack, realExit);
+  } else if (realExit < entry) {
+    error = "A saída real precisa ser depois da entrada.";
+  }
 
   if (error) {
     setError(el.recordError, error);
     return;
   }
 
-  const morning = lunchOut - entry;
-  const lunchTime = lunchBack - lunchOut;
-  const total = morning + (realExit - lunchBack);
+  const lunchTime = withLunch ? lunchBack - lunchOut : 0;
+  const total = withLunch
+    ? (lunchOut - entry) + (realExit - lunchBack)
+    : realExit - entry;
   const rawBalance = specialWorkType
     ? total
     : total - JOURNEY;
@@ -1870,7 +1902,9 @@ function calculateRecord() {
     : toleranceAdjustedBalance(rawBalance);
 
   el.recordTotal.textContent = duration(total);
-  el.recordLunchTime.textContent = duration(lunchTime);
+  el.recordLunchTime.textContent = withLunch
+    ? duration(lunchTime)
+    : "Sem intervalo";
   el.recordBalance.textContent = specialWorkType
     ? duration(balance, true)
     : balance === 0
@@ -1883,7 +1917,7 @@ function calculateRecord() {
     setMetricStatus(el.recordBalanceMetric, "positive");
     el.recordResultLabel.textContent = specialLabel;
     el.recordResultText.textContent =
-      `Você trabalhou ${duration(total)}. Como é ${
+      `Você trabalhou ${duration(total)}${withLunch ? "" : " sem intervalo registrado"}. Como é ${
         specialWorkType === "holiday"
           ? "feriado"
           : "fim de semana"
@@ -1894,7 +1928,7 @@ function calculateRecord() {
     setMetricStatus(el.recordBalanceMetric, "positive");
     el.recordResultLabel.textContent = "Saldo positivo";
     el.recordResultText.textContent =
-      `Você trabalhou ${duration(total)} e acumulou ` +
+      `Você trabalhou ${duration(total)}${withLunch ? "" : " sem intervalo registrado"} e acumulou ` +
       `${duration(balance)} de hora positiva.`;
     el.recordResultValue.textContent = duration(balance, true);
     setResultStatus(el.recordResult, "green");
@@ -1902,8 +1936,8 @@ function calculateRecord() {
     setMetricStatus(el.recordBalanceMetric, "negative");
     el.recordResultLabel.textContent = "Saldo negativo";
     el.recordResultText.textContent =
-      `Você trabalhou ${duration(total)}. Faltaram ${duration(balance)} ` +
-      `para completar 8 horas.`;
+      `Você trabalhou ${duration(total)}${withLunch ? "" : " sem intervalo registrado"}. Faltaram ${duration(balance)} ` +
+      `para completar 8 horas. Depois de salvar, esse saldo poderá ser abonado no histórico.`;
     el.recordResultValue.textContent = duration(balance, true);
     setResultStatus(el.recordResult, "red");
   } else {
@@ -1926,9 +1960,10 @@ function calculateRecord() {
   lastRecord = {
     date: el.date.value,
     entry: el.recordEntry.value,
-    lunchOut: el.recordLunchOut.value,
-    lunchBack: el.recordLunchBack.value,
+    lunchOut: withLunch ? el.recordLunchOut.value : "",
+    lunchBack: withLunch ? el.recordLunchBack.value : "",
     realExit: el.recordRealExit.value,
+    noLunch: !withLunch,
     total,
     balance: rawBalance,
     specialWorkType
@@ -1938,6 +1973,8 @@ function calculateRecord() {
 }
 function extractRecord() {
   const parsed = parsePastedText(el.recordPastedText.value);
+  const withLunch = recordUsesLunchInterval();
+  const expected = withLunch ? 4 : 2;
 
   if (!el.date.value) {
     el.recordParseStatus.textContent =
@@ -1946,17 +1983,24 @@ function extractRecord() {
     return;
   }
 
-  if (parsed.times.length !== 4) {
+  if (parsed.times.length !== expected) {
     el.recordParseStatus.textContent =
-      `Encontrei ${parsed.times.length} horário(s). Para registrar um dia concluído, cole exatamente 4 horários.`;
+      `Encontrei ${parsed.times.length} horário(s). Neste modo, cole exatamente ${expected} horários.`;
     el.recordParseStatus.className = "status error";
     return;
   }
 
   el.recordEntry.value = parsed.times[0];
-  el.recordLunchOut.value = parsed.times[1];
-  el.recordLunchBack.value = parsed.times[2];
-  el.recordRealExit.value = parsed.times[3];
+
+  if (withLunch) {
+    el.recordLunchOut.value = parsed.times[1];
+    el.recordLunchBack.value = parsed.times[2];
+    el.recordRealExit.value = parsed.times[3];
+  } else {
+    el.recordLunchOut.value = "";
+    el.recordLunchBack.value = "";
+    el.recordRealExit.value = parsed.times[1];
+  }
 
   el.recordParseStatus.textContent =
     `Preenchido: ${dateBR(el.date.value)} · ${parsed.times.join(" · ")}`;
@@ -1973,7 +2017,7 @@ function clearRecord() {
   el.recordRealExit.value = "";
   el.recordParseStatus.classList.add("hidden");
   setSelectedDate(yesterday());
-  calculateRecord();
+  resetRecordMode();
 }
 
 function saveDay() {
@@ -2032,7 +2076,11 @@ function saveDay() {
   renderHistory();
   evaluateAchievements({ source: "registro de jornada" });
   renderAchievements();
-  toast("Dia salvo no histórico.");
+  if (item.noLunch && workNegativeBaseMinutes(item) > 0) {
+    toast("Dia sem intervalo salvo. O saldo negativo pode ser abonado no Histórico.");
+  } else {
+    toast("Dia salvo no histórico.");
+  }
 }
 
 
@@ -2690,8 +2738,9 @@ function calendarWorkCell(item) {
         ${workBalanceAdjustmentHtml(item)}
 
         <small class="calendar-times">
-          ${item.entry}–${item.lunchOut}<br />
-          ${item.lunchBack}–${item.realExit}
+          ${item.noLunch
+            ? `${item.entry}–${item.realExit}<br /><span>Sem intervalo</span>`
+            : `${item.entry}–${item.lunchOut}<br />${item.lunchBack}–${item.realExit}`}
         </small>
       </div>
 
@@ -3758,6 +3807,8 @@ function ensureAchievementState(user) {
 }
 
 function achievementLunchMinutes(record) {
+  if (record?.noLunch === true) return null;
+
   const lunchOut = toMinutes(record?.lunchOut);
   const lunchBack = toMinutes(record?.lunchBack);
 
@@ -5685,8 +5736,6 @@ function renderStats() {
 
   const timedRecords = records.filter((record) => (
     toMinutes(record.entry) !== null &&
-    toMinutes(record.lunchOut) !== null &&
-    toMinutes(record.lunchBack) !== null &&
     toMinutes(record.realExit) !== null
   ));
 
@@ -5703,6 +5752,11 @@ function renderStats() {
     : null;
 
   const lunchRecords = timedRecords
+    .filter((record) => (
+      record.noLunch !== true &&
+      toMinutes(record.lunchOut) !== null &&
+      toMinutes(record.lunchBack) !== null
+    ))
     .map((record) => ({
       ...record,
       lunchDuration:
@@ -6188,6 +6242,8 @@ el.todayUseRealExit.addEventListener("change", calculateToday);
 });
 
 el.parseRecordText.onclick = extractRecord;
+el.recordModeWithLunch.addEventListener("change", () => applyRecordMode());
+el.recordModeNoLunch.addEventListener("change", () => applyRecordMode({ clearLunch: true }));
 el.clearRecord.onclick = clearRecord;
 el.saveDay.onclick = saveDay;
 el.exportBackup.onclick = exportBackup;
@@ -6298,8 +6354,8 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+resetRecordMode();
 initializeMathBurst();
-updateReleaseNotesForMathBurst();
 
 applyTheme(document.documentElement.dataset.theme || "light");
 applyPalette(DEFAULT_PALETTE);
