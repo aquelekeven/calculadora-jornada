@@ -2862,10 +2862,27 @@ function createCupConfetti() {
 
 function openCupPreview() {
   if (!el.cupResultDialog) return;
+
   renderCupPreview();
   createCupConfetti();
-  closeRankingDialog();
-  el.cupResultDialog.showModal();
+
+  if (el.rankingDialog?.open) {
+    el.rankingDialog.close();
+  }
+
+  // Aguarda o diálogo do ranking sair da camada modal antes de abrir a prévia.
+  // Isso também evita falhas silenciosas em navegadores que ainda estão
+  // processando o fechamento do primeiro <dialog>.
+  window.setTimeout(() => {
+    if (el.cupResultDialog.open) return;
+
+    try {
+      el.cupResultDialog.showModal();
+    } catch (error) {
+      console.warn("Não foi possível abrir a prévia como modal; usando fallback.", error);
+      el.cupResultDialog.setAttribute("open", "");
+    }
+  }, 60);
 }
 
 function closeCupPreview({ reopenRanking = false } = {}) {
