@@ -1,5 +1,5 @@
-const CACHE="jornada-fb-google-cloud-v2-7-6-ranking-perfil-fogos";
-const FILES=["./","./index.html","./styles.css?v=2.7.6-ranking-perfil-fogos","./app.js?v=2.7.6-ranking-perfil-fogos","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.png","./mascot-pato.png","./mascot-coelha.png","./mascot-coruja.png"];
+const CACHE="jornada-fb-google-cloud-v2-7-7-novos-mascotes-tema-unico";
+const FILES=["./","./index.html","./styles.css?v=2.7.7-novos-mascotes-tema-unico","./app.js?v=2.7.7-novos-mascotes-tema-unico","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.webp","./mascot-pato.webp","./mascot-coelha.webp","./mascot-coruja.webp","./mascot-raposa.webp","./mascot-tubarao.webp","./mascot-dragao.webp","./mascot-gato.webp"];
 
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)));

@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.7.6";
+const APP_RELEASE_ID = "v2.7.7";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -127,26 +127,14 @@ const PALETTES = {
 };
 
 const MASCOTS = {
-  panda: {
-    label: "Panda",
-    palette: "panda",
-    image: "mascot-panda.png"
-  },
-  pato: {
-    label: "Pato",
-    palette: "pato",
-    image: "mascot-pato.png"
-  },
-  coelha: {
-    label: "Coelha",
-    palette: "coelha",
-    image: "mascot-coelha.png"
-  },
-  coruja: {
-    label: "Coruja",
-    palette: "coruja",
-    image: "mascot-coruja.png"
-  }
+  panda: { label: "Panda", image: "mascot-panda.webp" },
+  pato: { label: "Pato", image: "mascot-pato.webp" },
+  coelha: { label: "Coelha", image: "mascot-coelha.webp" },
+  coruja: { label: "Coruja", image: "mascot-coruja.webp" },
+  raposa: { label: "Raposa", image: "mascot-raposa.webp" },
+  tubarao: { label: "Tubarão", image: "mascot-tubarao.webp" },
+  dragao: { label: "Dragão", image: "mascot-dragao.webp" },
+  gato: { label: "Gato", image: "mascot-gato.webp" }
 };
 
 function mascotMarkup(id) {
@@ -173,24 +161,10 @@ function isPaletteIndependent(user) {
 
 function updateDynamicAppIcon() {
   const favicon = document.getElementById("appFavicon");
-
   if (!favicon) return;
 
-  const paletteId =
-    document.documentElement.dataset.palette ||
-    DEFAULT_PALETTE;
-
-  const palette =
-    PALETTES[paletteId] ||
-    PALETTES[DEFAULT_PALETTE];
-
-  const dark =
-    document.documentElement.dataset.theme === "dark";
-
-  const color = dark
-    ? palette.iconDark
-    : palette.iconLight;
-
+  const dark = document.documentElement.dataset.theme === "dark";
+  const color = dark ? "#5aa9ff" : "#0071e3";
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
       <g fill="none" stroke="${color}" stroke-width="4"
@@ -204,27 +178,18 @@ function updateDynamicAppIcon() {
     </svg>
   `;
 
-  favicon.href =
-    `data:image/svg+xml,${encodeURIComponent(svg)}`;
-
+  favicon.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
   favicon.type = "image/svg+xml";
 }
 
 function updateThemeColor() {
-  const paletteId = document.documentElement.dataset.palette || DEFAULT_PALETTE;
-  const palette = PALETTES[paletteId] || PALETTES[DEFAULT_PALETTE];
   const dark = document.documentElement.dataset.theme === "dark";
-
-  if (el.themeColor) {
-    el.themeColor.content = dark ? palette.themeDark : palette.themeLight;
-  }
-
+  if (el.themeColor) el.themeColor.content = dark ? "#0f1012" : "#f5f5f7";
   updateDynamicAppIcon();
 }
 
-function applyPalette(paletteId) {
-  const palette = PALETTES[paletteId] ? paletteId : DEFAULT_PALETTE;
-  document.documentElement.dataset.palette = palette;
+function applyPalette() {
+  document.documentElement.removeAttribute("data-palette");
   updateThemeColor();
 }
 
@@ -856,7 +821,7 @@ function resetCloudInterface() {
 
   el.appView.classList.add("hidden");
   el.authView.classList.remove("hidden");
-  applyPalette(DEFAULT_PALETTE);
+  applyPalette();
   setSyncState("connecting");
 }
 
@@ -1080,7 +1045,7 @@ function openApp(code) {
 
 function renderMascotPicker() {
   const user = accounts()[currentUser];
-  if (!user) return;
+  if (!user || !el.mascotGrid) return;
 
   const selected = ensureMascot(user);
 
@@ -1091,12 +1056,13 @@ function renderMascotPicker() {
         data-mascot="${id}"
         type="button"
         aria-label="Usar mascote ${mascot.label}"
+        title="${mascot.label}"
         aria-pressed="${id === selected}"
       >
         <span class="profile-avatar" aria-hidden="true">
           ${mascotMarkup(id)}
         </span>
-        <span>${mascot.label}</span>
+        <span class="mascot-selected-check" aria-hidden="true">✓</span>
       </button>
     `)
     .join("");
@@ -1452,7 +1418,6 @@ function updateAccountInterface() {
 
   renderProfileAvatarModeSettings();
   renderMascotPicker();
-  renderPalettePicker();
   loadSalarySettings(user);
   renderPersonalRankingSummary();
   renderPublicAvatarSettings();
@@ -1466,10 +1431,8 @@ function selectMascot(mascotId) {
   if (!user) return;
 
   user.mascot = mascotId;
-
-  if (!isPaletteIndependent(user)) {
-    user.palette = MASCOTS[mascotId].palette;
-  }
+  user.palette = DEFAULT_PALETTE;
+  user.paletteIndependent = false;
 
   allAccounts[currentUser] = user;
   saveAccounts(allAccounts);
@@ -1479,11 +1442,7 @@ function selectMascot(mascotId) {
   evaluateAchievements({ source: "mascote" });
   renderAchievements();
 
-  toast(
-    isPaletteIndependent(user)
-      ? `Mascote ${MASCOTS[mascotId].label} selecionado.`
-      : `Mascote e paleta ${MASCOTS[mascotId].label} selecionados.`
-  );
+  toast("Mascote atualizado.");
 }
 
 function selectPalette(paletteId) {
@@ -5175,8 +5134,8 @@ const ACHIEVEMENTS = [
   { id:"cientista-jornada", code:"CJ", category:"app", name:"Cientista da jornada", description:"Abra Dados inúteis em 10 dias diferentes." },
   { id:"agora-virou-competicao", code:"AV", category:"app", name:"Agora virou competição", description:"Supere um dos seus próprios recordes pessoais." },
   { id:"deixa-eu-conferir", code:"DC", category:"app", name:"Deixa eu só conferir", description:"Abra o histórico 20 vezes." },
-  { id:"personalidade-definida", code:"PD", category:"app", name:"Personalidade definida", description:"Escolha um mascote e use uma paleta independente." },
-  { id:"colecionador-estilos", code:"CE", category:"app", name:"Colecionador de estilos", description:"Use os quatro mascotes pelo menos uma vez." },
+  { id:"personalidade-definida", code:"PD", category:"app", name:"Personalidade definida", description:"Troque seu mascote pelo menos uma vez." },
+  { id:"colecionador-estilos", code:"CE", category:"app", name:"Colecionador de estilos", description:"Use quatro mascotes diferentes pelo menos uma vez." },
   { id:"contador-honorario", code:"CH", category:"app", name:"Contador honorário", description:"Ative a estimativa financeira." },
   { id:"quanto-vale-sofrimento", code:"QV", category:"app", name:"Quanto vale meu sofrimento?", description:"Consulte pela primeira vez a estimativa financeira das horas." },
 
@@ -5932,7 +5891,7 @@ function achievementResult(id, context, unlockedWithoutFinal = 0) {
     case "deixa-eu-conferir":
       return progress(historyOpens >= 20, historyOpens, 20);
     case "personalidade-definida":
-      return progress(c.user.paletteIndependent === true);
+      return progress(mascotsUsed >= 2, mascotsUsed, 2);
     case "colecionador-estilos":
       return progress(mascotsUsed >= 4, mascotsUsed, 4);
     case "contador-honorario":
@@ -7743,8 +7702,6 @@ el.achievementCategoryFilter.addEventListener("change", () => {
   renderAchievements();
 });
 
-el.paletteIndependent.addEventListener("change", toggleIndependentPalette);
-
 el.salaryEstimateEnabled.addEventListener("change", saveSalarySettings);
 el.salaryEstimateNegative.addEventListener("change", saveSalarySettings);
 
@@ -7899,7 +7856,7 @@ resetRecordMode();
 initializeMathBurst();
 
 applyTheme(document.documentElement.dataset.theme || "light");
-applyPalette(DEFAULT_PALETTE);
+applyPalette();
 el.authView.classList.remove("hidden");
 el.appView.classList.add("hidden");
 initializeCloudAuth();
