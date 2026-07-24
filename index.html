@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7-copa-clt-hub" />
+  <link rel="stylesheet" href="styles.css?v=2.7.2-podio-clean-teste" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -1162,6 +1162,17 @@
           <button class="text-action openPrivacyNotice" type="button">Privacidade</button>
         </span>
       </footer>
+
+      <button
+        id="podiumTestFab"
+        class="podium-test-fab"
+        type="button"
+        aria-label="Abrir teste de pódio da COPA CLT"
+        title="Teste de pódio"
+      >
+        <span class="podium-test-fab-icon" aria-hidden="true">🏆</span>
+        <span class="podium-test-fab-label">Teste de pódio</span>
+      </button>
     </section>
   </main>
 
@@ -1170,37 +1181,27 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.7</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.2</h2>
         </div>
-        <span class="release-pill">V2.7</span>
+        <span class="release-pill">V2.7.2</span>
       </header>
 
       <section class="release-note featured">
         <span class="release-note-icon" aria-hidden="true">🏆</span>
         <div>
-          <strong>Nova área COPA CLT</strong>
+          <strong>Novo teste de pódio</strong>
           <p>
-            Desempenho pessoal, Top 3 atual, extrato privado e conquistas anteriores agora ficam reunidos em uma tela própria.
+            A prévia da COPA CLT ganhou um layout clean inspirado em painel de liderança, com Top 3 em destaque e classificação logo abaixo.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">📜</span>
+        <span class="release-note-icon" aria-hidden="true">🧪</span>
         <div>
-          <strong>Extrato mais limpo</strong>
+          <strong>Botão flutuante temporário</strong>
           <p>
-            O histórico de pontos ganhou seletor moderno de mês e área com rolagem, sem ocupar a tela inteira.
-          </p>
-        </div>
-      </section>
-
-      <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">🥇</span>
-        <div>
-          <strong>Conquistas de pódio</strong>
-          <p>
-            Colocações anteriores em 1º, 2º e 3º passam a aparecer como medalhas pessoais dentro da COPA CLT.
+            Use “Teste de pódio” para abrir a prévia a qualquer momento enquanto ajustamos o resultado mensal definitivo.
           </p>
         </div>
       </section>
@@ -1236,7 +1237,7 @@
 
       <div class="ranking-dialog-actions ranking-dialog-actions-preview">
         <button id="openCupPreview" class="btn secondary cup-preview-launch" type="button">
-          Prévia da COPA CLT
+          Teste de pódio
         </button>
         <button id="rankingDialogParticipation" class="btn secondary" type="button" disabled>
           Não quero participar
@@ -1247,51 +1248,56 @@
   </dialog>
 
   <dialog id="cupResultDialog" class="cup-result-dialog" aria-labelledby="cupResultTitle">
-    <div class="cup-result-shell">
-      <section class="cup-result-hero">
-        <div id="cupConfetti" class="cup-confetti" aria-hidden="true"></div>
-        <div class="cup-orbit cup-orbit-one" aria-hidden="true"></div>
-        <div class="cup-orbit cup-orbit-two" aria-hidden="true"></div>
-        <div class="cup-orbit cup-orbit-three" aria-hidden="true"></div>
+    <div class="cup-result-stage">
+      <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar teste de pódio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
 
-        <header class="cup-result-topbar">
-          <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar prévia da COPA CLT">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-          <span class="cup-preview-pill">Prévia visual · pontos atuais</span>
-        </header>
-
-        <div class="cup-result-heading">
-          <p>COPA CLT</p>
-          <h2 id="cupResultTitle">Resultado da temporada</h2>
-          <span id="cupResultPeriod">Julho de 2026</span>
+      <div class="cup-ticket">
+        <div class="cup-ticket-top" aria-hidden="true">
+          <span>🏆</span>
         </div>
 
-        <div id="cupPodium" class="cup-podium" aria-label="Pódio da temporada"></div>
-      </section>
-
-      <section class="cup-result-board">
-        <header class="cup-board-head">
-          <div>
-            <p class="eyebrow">Classificação final</p>
-            <h3 id="cupBoardTitle">COPA CLT</h3>
-          </div>
-          <span id="cupBoardPeriod">Julho de 2026</span>
+        <header class="cup-result-heading">
+          <p>Resultado parcial</p>
+          <h2 id="cupResultTitle">COPA CLT</h2>
+          <span id="cupResultPeriod">Julho de 2026</span>
         </header>
 
-        <p class="cup-preview-note">
-          Prévia visual com os pontos atuais da COPA CLT. O resultado mensal ainda não está fechado.
-        </p>
+        <section class="cup-podium-section" aria-label="Top 3 da temporada">
+          <div id="cupPodium" class="cup-podium"></div>
+        </section>
 
-        <ol id="cupResultList" class="cup-result-list" aria-live="polite"></ol>
+        <nav class="cup-scope-tabs" aria-label="Período da classificação">
+          <button type="button" disabled>Geral</button>
+          <button class="active" type="button" aria-current="page">Mês</button>
+          <button type="button" disabled>Semana</button>
+          <button type="button" disabled>Dia</button>
+        </nav>
 
-        <article id="cupMyResult" class="cup-my-result hidden"></article>
+        <section class="cup-result-board">
+          <header class="cup-board-head">
+            <div>
+              <p class="eyebrow">Classificação atual</p>
+              <h3 id="cupBoardTitle">Demais participantes</h3>
+            </div>
+            <span id="cupBoardPeriod">Julho de 2026</span>
+          </header>
 
-        <footer class="cup-result-actions">
-          <button id="cupBackToRanking" class="btn secondary" type="button">Voltar ao ranking</button>
-          <button id="closeCupResult" class="btn primary" type="button">Continuar no aplicativo</button>
-        </footer>
-      </section>
+          <p class="cup-preview-note">
+            Tela temporária de teste. O resultado mensal definitivo será exibido no primeiro dia útil do mês seguinte.
+          </p>
+
+          <ol id="cupResultList" class="cup-result-list" aria-live="polite"></ol>
+
+          <article id="cupMyResult" class="cup-my-result hidden"></article>
+
+          <footer class="cup-result-actions">
+            <button id="cupBackToRanking" class="btn secondary" type="button">Ver ranking completo</button>
+            <button id="closeCupResult" class="btn primary" type="button">Continuar no aplicativo</button>
+          </footer>
+        </section>
+      </div>
     </div>
   </dialog>
 
@@ -1476,6 +1482,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7-copa-clt-hub"></script>
+  <script src="app.js?v=2.7.2-podio-clean-teste"></script>
 </body>
 </html>

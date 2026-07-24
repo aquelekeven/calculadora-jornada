@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.7";
+const APP_RELEASE_ID = "v2.7.2";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -260,6 +260,7 @@ const el = {
   rankingDialogParticipation: $("rankingDialogParticipation"),
   rankingDialogPeriod: $("rankingDialogPeriod"),
   openCupPreview: $("openCupPreview"),
+  podiumTestFab: $("podiumTestFab"),
   cupResultDialog: $("cupResultDialog"),
   cupConfetti: $("cupConfetti"),
   cupResultPeriod: $("cupResultPeriod"),
@@ -3378,11 +3379,21 @@ function cupPreviewMonthLabel() {
   }).format(now).replace(/^./, (character) => character.toUpperCase());
 }
 
-
 function cupPreviewFallbackRows() {
   const user = accounts()[currentUser];
   const ownName = displayName(user);
-  const names = [ownName, "Gabriel H.", "Bárbara S.", "Participante 4", "Participante 5"];
+  const names = [
+    ownName,
+    "Gabriel H.",
+    "Bárbara S.",
+    "Participante 4",
+    "Participante 5",
+    "Participante 6",
+    "Participante 7",
+    "Participante 8",
+    "Participante 9",
+    "Participante 10"
+  ];
 
   return names.map((name, index) => ({
     position: index + 1,
@@ -3391,47 +3402,84 @@ function cupPreviewFallbackRows() {
     avatarMode: index === 0 ? "mascot" : "initials",
     avatarUrl: "",
     mascotId: index === 0 && user ? ensureMascot(user) : DEFAULT_MASCOT,
-    isCurrentUser: index === 0
+    isCurrentUser: index === 0,
+    isPreviewPlaceholder: index > 0
   }));
 }
 
-
 function cupPreviewRows() {
-  const hasRealRanking = medalRankingRows.length > 0;
-  const source = hasRealRanking
-    ? medalRankingRows.slice(0, 10)
-    : cupPreviewFallbackRows();
+  const fallback = cupPreviewFallbackRows();
+  const realRows = Array.isArray(medalRankingRows) ? medalRankingRows : [];
+  const byPosition = new Map();
 
-  return source.map((row, index) => ({
-    ...row,
-    position: row.position || index + 1,
-    previewPoints: hasRealRanking
-      ? row.points
-      : (row.points ?? CUP_PREVIEW_POINTS[index] ?? Math.max(12, 40 - index * 3))
-  }));
+  realRows.forEach((row) => {
+    const position = Number(row.position);
+    if (!Number.isFinite(position) || position < 1) return;
+    byPosition.set(position, {
+      ...row,
+      position,
+      previewPoints: Number(row.points) || 0,
+      isPreviewPlaceholder: false
+    });
+  });
+
+  fallback.forEach((row) => {
+    if (byPosition.has(row.position)) return;
+    byPosition.set(row.position, {
+      ...row,
+      previewPoints: row.points
+    });
+  });
+
+  const topTen = Array.from({ length: 10 }, (_, index) => byPosition.get(index + 1))
+    .filter(Boolean);
+
+  const ownOutsideTopTen = realRows.find((row) => row.isCurrentUser && Number(row.position) > 10);
+  if (ownOutsideTopTen) {
+    topTen.push({
+      ...ownOutsideTopTen,
+      position: Number(ownOutsideTopTen.position),
+      previewPoints: Number(ownOutsideTopTen.points) || 0,
+      isPreviewPlaceholder: false
+    });
+  }
+
+  return topTen;
 }
 
 function cupPreviewAvatarMarkup(row) {
   return publicRankingAvatarMarkup(row, "cup-avatar");
 }
 
+function cupLaurelMarkup() {
+  const leaves = Array.from({ length: 6 }, () => "<i></i>").join("");
+  return `
+    <span class="cup-laurel cup-laurel-left" aria-hidden="true">${leaves}</span>
+    <span class="cup-laurel cup-laurel-right" aria-hidden="true">${leaves}</span>
+  `;
+}
+
 function cupPodiumMarkup(row) {
   if (!row) return "";
   const tier = rankTierForPosition(row.position);
   const safeName = escapeRankingText(row.displayName);
+  const label = row.position === 1 ? "Campeão do mês" : `${row.position}º lugar`;
+  const placeholder = row.isPreviewPlaceholder ? '<small class="cup-preview-placeholder">prévia</small>' : "";
 
   return `
     <article class="cup-podium-place cup-podium-place-${row.position} rank-tier-${tier.key}">
-      <div class="cup-podium-avatar-wrap">
-        ${cupPreviewAvatarMarkup(row)}
-        <span class="cup-podium-number">${row.position}</span>
+      <span class="cup-podium-label">${label}</span>
+      <div class="cup-podium-portrait">
+        ${cupLaurelMarkup()}
+        <div class="cup-podium-avatar-wrap">
+          ${cupPreviewAvatarMarkup(row)}
+          <span class="cup-podium-number">${row.position}</span>
+        </div>
       </div>
-      <div class="cup-podium-copy">
-        <strong>${safeName}</strong>
-        <small>${tier.icon} ${tier.title}</small>
-        <span>${row.previewPoints} pts</span>
-      </div>
-      <div class="cup-pedestal" aria-hidden="true"></div>
+      <strong class="cup-podium-name">${safeName}</strong>
+      <span class="cup-podium-trophy" aria-hidden="true">🏆</span>
+      <span class="cup-podium-score">${row.previewPoints} pontos</span>
+      ${placeholder}
     </article>
   `;
 }
@@ -3440,19 +3488,23 @@ function cupResultRowMarkup(row) {
   const tier = rankTierForPosition(row.position);
   const safeName = escapeRankingText(row.displayName);
   const currentLabel = row.isCurrentUser ? '<small class="cup-result-you">você</small>' : "";
+  const placeholder = row.isPreviewPlaceholder ? '<small class="cup-row-preview">prévia visual</small>' : `<small>${tier.title}</small>`;
 
   return `
     <li class="cup-result-row rank-tier-${tier.key} ${row.isCurrentUser ? "current-user" : ""}">
-      <span class="cup-result-position">${row.position}</span>
       <span class="cup-result-person">
         ${cupPreviewAvatarMarkup(row)}
-        <span>
+        <span class="cup-result-person-copy">
           <strong>${safeName}</strong>
-          <small>${tier.icon} ${tier.title}</small>
+          ${placeholder}
         </span>
         ${currentLabel}
       </span>
-      <strong class="cup-result-points">${row.previewPoints}<small>pts</small></strong>
+      <strong class="cup-result-points">${row.previewPoints}<small>pontos</small></strong>
+      <span class="cup-result-position-chip">
+        <i aria-hidden="true">★</i>
+        <b>${row.position}º</b>
+      </span>
     </li>
   `;
 }
@@ -3460,9 +3512,9 @@ function cupResultRowMarkup(row) {
 function renderCupPreview() {
   const rows = cupPreviewRows();
   const period = cupPreviewMonthLabel();
-  const topOne = rows.find((row) => row.position === 1) || rows[0];
-  const topTwo = rows.find((row) => row.position === 2) || rows[1];
-  const topThree = rows.find((row) => row.position === 3) || rows[2];
+  const topOne = rows.find((row) => row.position === 1);
+  const topTwo = rows.find((row) => row.position === 2);
+  const topThree = rows.find((row) => row.position === 3);
 
   if (el.cupResultPeriod) el.cupResultPeriod.textContent = period;
   if (el.cupBoardPeriod) el.cupBoardPeriod.textContent = period;
@@ -3475,10 +3527,10 @@ function renderCupPreview() {
   }
 
   if (el.cupResultList) {
-    el.cupResultList.innerHTML = rows
-      .slice(0, 10)
-      .map(cupResultRowMarkup)
-      .join("");
+    const remaining = rows.filter((row) => row.position > 3 && row.position <= 10);
+    el.cupResultList.innerHTML = remaining.length
+      ? remaining.map(cupResultRowMarkup).join("")
+      : '<li class="cup-result-empty">Ainda não há participantes fora do Top 3.</li>';
   }
 
   const own = rows.find((row) => row.isCurrentUser);
@@ -3520,8 +3572,6 @@ function openCupPreview() {
   if (!el.cupResultDialog) return;
 
   renderCupPreview();
-  createCupConfetti();
-
   if (el.rankingDialog?.open) {
     el.rankingDialog.close();
   }
@@ -7335,6 +7385,7 @@ el.publicAvatarOptions?.addEventListener("click", (event) => {
   setPublicRankingAvatarMode(button.dataset.avatarMode);
 });
 el.openCupPreview?.addEventListener("click", openCupPreview);
+el.podiumTestFab?.addEventListener("click", openCupPreview);
 el.closeCupResultTop?.addEventListener("click", () => closeCupPreview());
 el.closeCupResult?.addEventListener("click", () => closeCupPreview());
 el.cupBackToRanking?.addEventListener("click", () => closeCupPreview({ reopenRanking: true }));
