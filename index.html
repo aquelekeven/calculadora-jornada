@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.9-mascotes-responsivos" />
+  <link rel="stylesheet" href="styles.css?v=2.7.10-resultado-real" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -1140,17 +1140,6 @@
           <button class="text-action openPrivacyNotice" type="button">Privacidade</button>
         </span>
       </footer>
-
-      <button
-        id="podiumTestFab"
-        class="podium-test-fab"
-        type="button"
-        aria-label="Abrir teste de pódio da COPA CLT"
-        title="Teste de pódio"
-      >
-        <span class="podium-test-fab-icon" aria-hidden="true">🏆</span>
-        <span class="podium-test-fab-label">Teste de pódio</span>
-      </button>
     </section>
   </main>
 
@@ -1159,16 +1148,16 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.7</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.10</h2>
         </div>
-        <span class="release-pill">V2.7.7</span>
+        <span class="release-pill">V2.7.10</span>
       </header>
       <section class="release-note featured">
         <span class="release-note-icon" aria-hidden="true">🐾</span>
         <div>
-          <strong>Nova coleção de mascotes</strong>
+          <strong>Seleção de mascotes corrigida</strong>
           <p>
-            Panda, pato, coelha e coruja foram renovados. Raposa, tubarão, dragão e gato entraram na seleção.
+            A raposa agora permanece selecionada corretamente e não troca mais para o pato.
           </p>
         </div>
       </section>
@@ -1176,9 +1165,9 @@
       <section class="release-note">
         <span class="release-note-icon" aria-hidden="true">◐</span>
         <div>
-          <strong>Tema mais simples</strong>
+          <strong>Resultado mensal real</strong>
           <p>
-            As paletas por mascote saíram. Agora o aplicativo usa um único visual, com escolha apenas entre claro e escuro.
+            O teste de pódio e os participantes fictícios foram removidos. O resultado aparece após o fechamento do mês com os dados reais da COPA CLT.
           </p>
         </div>
       </section>
@@ -1443,6 +1432,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.9-mascotes-responsivos"></script>
+  <script src="app.js?v=2.7.10-resultado-real"></script>
 </body>
 </html>

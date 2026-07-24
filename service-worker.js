@@ -1,5 +1,5 @@
-const CACHE="jornada-fb-google-cloud-v2-7-9-mascotes-responsivos";
-const FILES=["./","./index.html","./styles.css?v=2.7.9-mascotes-responsivos","./app.js?v=2.7.9-mascotes-responsivos","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.webp","./mascot-pato.webp","./mascot-coelha.webp","./mascot-coruja.webp","./mascot-raposa.webp","./mascot-tubarao.webp","./mascot-dragao.webp","./mascot-gato.webp"];
+const CACHE="jornada-fb-google-cloud-v2-7-10-resultado-real";
+const FILES=["./","./index.html","./styles.css?v=2.7.10-resultado-real","./app.js?v=2.7.10-resultado-real","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.webp","./mascot-pato.webp","./mascot-coelha.webp","./mascot-coruja.webp","./mascot-raposa.webp","./mascot-tubarao.webp","./mascot-dragao.webp","./mascot-gato.webp"];
 
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)));
