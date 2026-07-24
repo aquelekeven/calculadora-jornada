@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.3-resultado-mensal-rank-glow" />
+  <link rel="stylesheet" href="styles.css?v=2.7.4-resultado-mensal-centralizado" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -549,7 +549,7 @@
             <p class="eyebrow">Temporada mensal</p>
             <h2>COPA CLT</h2>
             <p class="muted">
-              Seu desempenho, o pódio atual, o extrato privado e as conquistas das temporadas anteriores em um só lugar.
+              Seu desempenho, o Top 3 atual, o extrato privado e o pódio do mês anterior em um só lugar.
             </p>
           </div>
           <div class="cup-hub-hero-icon" aria-hidden="true">
@@ -598,7 +598,6 @@
           <section class="card block cup-current-ranking-card">
             <header class="cup-section-head">
               <div>
-                <p class="eyebrow">Pódio provisório</p>
                 <h2>Top 3 do mês</h2>
               </div>
               <button id="cupOpenFullRanking" class="cup-inline-action" type="button">Ver Top 10</button>
@@ -651,20 +650,20 @@
           </aside>
         </section>
 
-        <section class="card block cup-achievements-card">
+        <section class="card block cup-previous-podium-card">
           <header class="cup-section-head">
             <div>
-              <p class="eyebrow">Histórico pessoal</p>
-              <h2>Suas conquistas na COPA CLT</h2>
+              <p class="eyebrow">Temporada anterior</p>
+              <h2>Pódio do mês anterior</h2>
             </div>
-            <span class="cup-achievements-badge">Top 3</span>
+            <span id="cupPreviousPodiumPeriod" class="cup-achievements-badge">—</span>
           </header>
-          <p id="cupPastAchievementsStatus" class="muted cup-past-achievements-status">
-            Buscando suas colocações anteriores…
+          <p id="cupPreviousPodiumStatus" class="muted cup-past-achievements-status">
+            Buscando o último pódio…
           </p>
-          <div id="cupPastAchievements" class="cup-past-achievements" aria-live="polite"></div>
+          <ol id="cupPreviousPodium" class="cup-current-top3 cup-previous-podium" aria-live="polite"></ol>
           <p class="cup-past-achievements-note">
-            Apenas colocações em 1º, 2º ou 3º aparecem aqui. Até ativarmos o fechamento mensal, resultados antigos acompanham os dados atuais do período.
+            Para manter tudo leve, fica disponível somente o Top 3 do mês imediatamente anterior. Quem terminou fora do pódio não recebe medalha nessa temporada.
           </p>
         </section>
 
@@ -1181,27 +1180,27 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.3</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.4</h2>
         </div>
-        <span class="release-pill">V2.7.3</span>
+        <span class="release-pill">V2.7.4</span>
       </header>
 
       <section class="release-note featured">
         <span class="release-note-icon" aria-hidden="true">🏆</span>
         <div>
-          <strong>Resultado mensal mais clean</strong>
+          <strong>Resultado mensal mais limpo</strong>
           <p>
-            A tela da COPA CLT agora aparece como um card branco flutuante, com o aplicativo desfocado ao fundo e sem áreas visuais desnecessárias.
+            O popup foi centralizado, ganhou uma única sombra externa e agora mantém somente o botão “Continuar no aplicativo”.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">✨</span>
+        <span class="release-note-icon" aria-hidden="true">🥇</span>
         <div>
-          <strong>Brilho conforme sua colocação</strong>
+          <strong>Somente o último pódio</strong>
           <p>
-            O card inteiro pulsa na cor do seu rank naquele resultado: diamante, ouro, bronze ou cinza.
+            A COPA CLT exibe o Top 3 atual e o pódio do mês anterior, sem carregar um histórico infinito de temporadas.
           </p>
         </div>
       </section>
@@ -1214,7 +1213,6 @@
     <div class="dialog-body ranking-dialog-body">
       <header class="ranking-dialog-head">
         <div>
-          <p class="eyebrow">Competição totalmente desnecessária</p>
           <h2 id="rankingTitle">Temporada da COPA CLT</h2>
           <span id="rankingDialogPeriod" class="ranking-period-label">Mês atual</span>
         </div>
@@ -1281,7 +1279,6 @@
           <article id="cupMyResult" class="cup-my-result hidden"></article>
 
           <footer class="cup-result-actions">
-            <button id="cupBackToRanking" class="btn secondary" type="button">Ver ranking completo</button>
             <button id="closeCupResult" class="btn primary" type="button">Continuar no aplicativo</button>
           </footer>
         </section>
@@ -1470,6 +1467,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.3-resultado-mensal-rank-glow"></script>
+  <script src="app.js?v=2.7.4-resultado-mensal-centralizado"></script>
 </body>
 </html>
