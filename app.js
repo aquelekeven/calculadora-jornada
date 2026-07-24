@@ -84,6 +84,7 @@ function initializeMathBurst() {
 
 const DEFAULT_MASCOT = "panda";
 const MASCOT_CAROUSEL_STEP = 3;
+const MASCOT_CAROUSEL_MEDIA = "(max-width: 760px)";
 const DEFAULT_PALETTE = "panda";
 const LEGACY_MASCOT_MAP = { urso: "panda", raposa: "pato", coruja: "coruja" };
 const LEGACY_PALETTE_MAP = { urso: "panda", raposa: "pato", coruja: "coruja" };
@@ -367,7 +368,6 @@ const el = {
   mascotGrid: $("mascotGrid"),
   mascotPrev: $("mascotPrev"),
   mascotNext: $("mascotNext"),
-  mascotDots: $("mascotDots"),
   paletteIndependent: $("paletteIndependent"),
   paletteGrid: $("paletteGrid"),
   paletteLinkStatus: $("paletteLinkStatus"),
@@ -1048,6 +1048,10 @@ function openApp(code) {
 }
 
 
+function isMascotCarouselMode() {
+  return window.matchMedia(MASCOT_CAROUSEL_MEDIA).matches;
+}
+
 function getMascotCarouselStep() {
   const firstCard = el.mascotGrid?.querySelector(".mascot-option");
   if (!firstCard) return 0;
@@ -1057,13 +1061,14 @@ function getMascotCarouselStep() {
 }
 
 function scrollMascotIntoView(mascotId, behavior = "smooth") {
+  if (!isMascotCarouselMode()) return;
   const button = el.mascotGrid?.querySelector(`[data-mascot="${mascotId}"]`);
   if (!button) return;
   button.scrollIntoView({ behavior, inline: "center", block: "nearest" });
 }
 
 function moveMascotCarousel(direction = 1) {
-  if (!el.mascotGrid) return;
+  if (!el.mascotGrid || !isMascotCarouselMode()) return;
   const step = getMascotCarouselStep();
   if (!step) return;
   el.mascotGrid.scrollBy({
@@ -1099,42 +1104,25 @@ function renderMascotPicker() {
     })
     .join("");
 
-  if (el.mascotDots) {
-    el.mascotDots.innerHTML = MASCOT_IDS
-      .map((id) => `
-        <button
-          class="mascot-carousel-dot ${id === selected ? "active" : ""}"
-          data-mascot="${id}"
-          type="button"
-          aria-label="Ir para ${MASCOTS[id].label}"
-          aria-pressed="${id === selected}"
-        ></button>
-      `)
-      .join("");
-
-    el.mascotDots
-      .querySelectorAll(".mascot-carousel-dot")
-      .forEach((dot) => {
-        dot.addEventListener("click", () => {
-          const mascotId = dot.dataset.mascot;
-          scrollMascotIntoView(mascotId);
-          selectMascot(mascotId);
-        });
-      });
-  }
-
   el.mascotGrid
     .querySelectorAll(".mascot-option")
     .forEach((button) => {
-      button.addEventListener("click", () => {
-        selectMascot(button.dataset.mascot);
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const mascotId = button.getAttribute("data-mascot");
+        if (!MASCOTS[mascotId]) return;
+        selectMascot(mascotId);
       });
     });
 
   if (el.mascotPrev) el.mascotPrev.onclick = () => moveMascotCarousel(-1);
   if (el.mascotNext) el.mascotNext.onclick = () => moveMascotCarousel(1);
 
-  requestAnimationFrame(() => scrollMascotIntoView(selected, "auto"));
+  if (isMascotCarouselMode()) {
+    requestAnimationFrame(() => scrollMascotIntoView(selected, "auto"));
+  } else {
+    el.mascotGrid.scrollLeft = 0;
+  }
 }
 
 function renderPalettePicker() {
