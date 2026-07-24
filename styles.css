@@ -6614,3 +6614,163 @@ html[data-theme="dark"] .rank-tier-common{--rank-deep:#c0c6d0}
 @media(prefers-reduced-motion:reduce){
   .cup-ticket{animation:none!important;box-shadow:0 30px 82px rgba(29,25,35,.28)}
 }
+
+
+/* V2.7.5 · Card retangular, ranks coloridos e navegação do Top 3 */
+.cup-top3-head{align-items:center}
+.cup-top3-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.cup-top3-month-nav{
+  display:grid;
+  grid-template-columns:32px minmax(112px,auto) 32px;
+  align-items:center;
+  gap:5px;
+  min-height:38px;
+  padding:3px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--bg-soft) 78%,var(--card-solid));
+}
+.cup-top3-month-button{
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:var(--card-solid);
+  color:var(--text);
+  box-shadow:0 4px 12px rgba(21,28,36,.08);
+  cursor:pointer;
+  transition:transform .16s ease,box-shadow .16s ease,opacity .16s ease;
+}
+.cup-top3-month-button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 7px 17px rgba(21,28,36,.13)}
+.cup-top3-month-button:disabled{opacity:.32;cursor:default;box-shadow:none}
+.cup-top3-month-button svg{width:17px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.cup-top3-period{padding:0 4px;color:var(--text);font-size:.68rem;font-weight:850;text-align:center;white-space:nowrap}
+
+.cup-result-dialog{
+  inset:0!important;
+  width:100vw!important;
+  max-width:none!important;
+  height:100dvh!important;
+  max-height:none!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.cup-result-dialog::backdrop{
+  background:rgba(24,27,32,.34)!important;
+  -webkit-backdrop-filter:blur(14px) saturate(.82)!important;
+  backdrop-filter:blur(14px) saturate(.82)!important;
+}
+.cup-result-stage{
+  box-sizing:border-box!important;
+  display:grid!important;
+  width:100%!important;
+  min-height:100%!important;
+  height:100%!important;
+  place-items:safe center!important;
+  padding:82px 54px 58px!important;
+  overflow:auto!important;
+  background:transparent!important;
+}
+.cup-ticket{
+  box-sizing:border-box!important;
+  width:min(720px,100%)!important;
+  min-height:0!important;
+  margin:auto!important;
+  padding:54px 36px 30px!important;
+  overflow:visible!important;
+  border:1px solid #e9e5eb!important;
+  border-radius:28px!important;
+  background:#fff!important;
+  box-shadow:0 24px 58px rgba(30,34,39,.18)!important;
+  animation:none!important;
+}
+.cup-ticket::before{display:none!important}
+.cup-ticket-top{
+  top:-34px!important;
+  width:64px!important;
+  height:64px!important;
+  border:1px solid #e7e1ea!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  color:#6840a1!important;
+  box-shadow:0 11px 25px rgba(33,37,43,.14)!important;
+}
+.cup-ticket-top::after{display:none!important}
+.cup-ticket-top span{font-size:1.52rem!important;filter:none!important}
+.cup-result-back{
+  top:18px!important;
+  left:18px!important;
+  border-color:rgba(255,255,255,.72)!important;
+  background:rgba(255,255,255,.92)!important;
+  color:#4b3b59!important;
+  box-shadow:0 8px 22px rgba(31,35,40,.12)!important;
+}
+
+.cup-podium{gap:12px!important}
+.cup-podium-place{
+  --rank-color:var(--rank-common)!important;
+  --rank-deep:var(--rank-common-deep)!important;
+  min-height:220px;
+  padding:14px 8px 13px!important;
+  border:2px solid var(--rank-color)!important;
+  border-radius:20px!important;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--rank-color) 10%,#fff),#fff 66%)!important;
+  box-shadow:none!important;
+}
+.cup-podium-place.rank-tier-diamond{--rank-color:var(--rank-diamond)!important;--rank-deep:var(--rank-diamond-deep)!important}
+.cup-podium-place.rank-tier-gold{--rank-color:var(--rank-gold)!important;--rank-deep:var(--rank-gold-deep)!important}
+.cup-podium-place.rank-tier-bronze{--rank-color:var(--rank-bronze)!important;--rank-deep:var(--rank-bronze-deep)!important}
+.cup-podium-place-1{padding-bottom:20px!important}
+.cup-podium-label{color:var(--rank-deep)!important}
+.cup-podium-name{margin-top:2px;color:#2f2438!important}
+.cup-podium-rank-title{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:24px;
+  margin-top:7px;
+  padding:4px 9px;
+  border:1px solid color-mix(in srgb,var(--rank-color) 48%,#e8e4e9);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--rank-color) 12%,#fff);
+  color:var(--rank-deep);
+  font-size:.57rem;
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+}
+.cup-podium-score{margin-top:7px!important;color:var(--rank-deep)!important;font-weight:900!important}
+.cup-podium-trophy{display:none!important}
+.cup-avatar{border-color:var(--rank-color)!important}
+.cup-podium-number{background:var(--rank-color)!important;color:#242129!important}
+
+@media(max-width:700px){
+  .cup-top3-head{align-items:flex-start}
+  .cup-top3-actions{width:100%;justify-content:space-between}
+  .cup-top3-month-nav{grid-template-columns:30px minmax(104px,1fr) 30px;flex:1}
+  .cup-top3-month-button{width:30px;height:30px}
+  .cup-result-stage{padding:74px 16px 42px!important}
+  .cup-ticket{padding:48px 14px 20px!important;border-radius:22px!important;box-shadow:0 20px 44px rgba(30,34,39,.17)!important}
+  .cup-ticket-top{top:-31px!important;width:58px!important;height:58px!important}
+  .cup-podium{gap:5px!important}
+  .cup-podium-place{min-height:184px;padding:10px 3px 11px!important;border-radius:15px!important}
+  .cup-podium-place-1{padding-bottom:15px!important}
+  .cup-podium-rank-title{min-height:21px;margin-top:5px;padding:3px 5px;font-size:.45rem}
+  .cup-podium-score{margin-top:5px!important;font-size:.48rem!important}
+}
+@media(max-width:430px){
+  .cup-top3-actions{align-items:stretch}
+  .cup-inline-action{flex:0 0 auto}
+  .cup-result-stage{padding:70px 9px 34px!important}
+  .cup-ticket{padding-left:8px!important;padding-right:8px!important}
+  .cup-podium-place{min-height:174px;border-width:1.5px!important}
+  .cup-podium-rank-title{font-size:.41rem}
+  .cup-podium-score{font-size:.43rem!important}
+}

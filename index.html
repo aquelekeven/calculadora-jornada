@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.4-resultado-mensal-centralizado" />
+  <link rel="stylesheet" href="styles.css?v=2.7.5-podio-ranks-navegacao" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -596,11 +596,22 @@
           </section>
 
           <section class="card block cup-current-ranking-card">
-            <header class="cup-section-head">
+            <header class="cup-section-head cup-top3-head">
               <div>
                 <h2>Top 3 do mês</h2>
               </div>
-              <button id="cupOpenFullRanking" class="cup-inline-action" type="button">Ver Top 10</button>
+              <div class="cup-top3-actions">
+                <div class="cup-top3-month-nav" aria-label="Alternar entre o mês atual e o anterior">
+                  <button id="cupTop3Previous" class="cup-top3-month-button" type="button" aria-label="Ver pódio do mês anterior" title="Ver mês anterior">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
+                  <span id="cupTop3Period" class="cup-top3-period">—</span>
+                  <button id="cupTop3Next" class="cup-top3-month-button" type="button" aria-label="Voltar ao pódio do mês atual" title="Voltar ao mês atual" disabled>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                </div>
+                <button id="cupOpenFullRanking" class="cup-inline-action" type="button">Ver Top 10</button>
+              </div>
             </header>
             <p id="cupCurrentRankingStatus" class="muted cup-current-ranking-status">Carregando o pódio atual…</p>
             <ol id="cupCurrentTop3" class="cup-current-top3" aria-live="polite"></ol>
@@ -650,22 +661,6 @@
           </aside>
         </section>
 
-        <section class="card block cup-previous-podium-card">
-          <header class="cup-section-head">
-            <div>
-              <p class="eyebrow">Temporada anterior</p>
-              <h2>Pódio do mês anterior</h2>
-            </div>
-            <span id="cupPreviousPodiumPeriod" class="cup-achievements-badge">—</span>
-          </header>
-          <p id="cupPreviousPodiumStatus" class="muted cup-past-achievements-status">
-            Buscando o último pódio…
-          </p>
-          <ol id="cupPreviousPodium" class="cup-current-top3 cup-previous-podium" aria-live="polite"></ol>
-          <p class="cup-past-achievements-note">
-            Para manter tudo leve, fica disponível somente o Top 3 do mês imediatamente anterior. Quem terminou fora do pódio não recebe medalha nessa temporada.
-          </p>
-        </section>
 
         <div class="stats-bottom-actions">
           <button id="cupScrollTop" class="stats-scroll-top cup-scroll-top" type="button">
@@ -1180,27 +1175,27 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.4</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.5</h2>
         </div>
-        <span class="release-pill">V2.7.4</span>
+        <span class="release-pill">V2.7.5</span>
       </header>
 
       <section class="release-note featured">
         <span class="release-note-icon" aria-hidden="true">🏆</span>
         <div>
-          <strong>Resultado mensal mais limpo</strong>
+          <strong>Pódio com identidade de cada rank</strong>
           <p>
-            O popup foi centralizado, ganhou uma única sombra externa e agora mantém somente o botão “Continuar no aplicativo”.
+            Diamante, ouro e bronze agora aparecem com bordas próprias, nome do rank e pontuação mensal, sem troféus repetidos em cada vencedor.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">🥇</span>
+        <span class="release-note-icon" aria-hidden="true">↔️</span>
         <div>
-          <strong>Somente o último pódio</strong>
+          <strong>Mês anterior no próprio Top 3</strong>
           <p>
-            A COPA CLT exibe o Top 3 atual e o pódio do mês anterior, sem carregar um histórico infinito de temporadas.
+            Use as setas no card “Top 3 do mês” para alternar entre o pódio atual e o mês imediatamente anterior.
           </p>
         </div>
       </section>
@@ -1467,6 +1462,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.4-resultado-mensal-centralizado"></script>
+  <script src="app.js?v=2.7.5-podio-ranks-navegacao"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.7.4";
+const APP_RELEASE_ID = "v2.7.5";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -348,9 +348,9 @@ const el = {
   cupOpenFullRanking: $("cupOpenFullRanking"),
   cupCurrentRankingStatus: $("cupCurrentRankingStatus"),
   cupCurrentTop3: $("cupCurrentTop3"),
-  cupPreviousPodiumPeriod: $("cupPreviousPodiumPeriod"),
-  cupPreviousPodiumStatus: $("cupPreviousPodiumStatus"),
-  cupPreviousPodium: $("cupPreviousPodium"),
+  cupTop3Previous: $("cupTop3Previous"),
+  cupTop3Next: $("cupTop3Next"),
+  cupTop3Period: $("cupTop3Period"),
   mainNavigation: $("mainNavigation"),
   todayPanel: $("todayPanel"),
   recordPanel: $("recordPanel"),
@@ -528,6 +528,7 @@ let cupPreviousPodiumRows = [];
 let cupPreviousPodiumLoading = false;
 let cupPreviousPodiumError = "";
 let cupPreviousPodiumSignature = "";
+let cupTop3View = "current";
 
 function accounts() {
   return cloudAccountsCache;
@@ -3064,52 +3065,59 @@ function cupTopThreeMarkup(row) {
 function renderCupCurrentRankingSummary() {
   if (!el.cupCurrentTop3 || !el.cupCurrentRankingStatus) return;
 
-  if (medalRankingLoading && !medalRankingRows.length) {
-    el.cupCurrentRankingStatus.textContent = "Carregando o pódio atual…";
+  const viewingPrevious = cupTop3View === "previous";
+  const monthKey = viewingPrevious ? previousMonthKey() : currentMonthKey();
+  const rows = viewingPrevious ? cupPreviousPodiumRows : cupTopThreeRows();
+  const loading = viewingPrevious
+    ? cupPreviousPodiumLoading
+    : medalRankingLoading && !medalRankingRows.length;
+  const error = viewingPrevious ? cupPreviousPodiumError : medalRankingError;
+
+  if (el.cupTop3Period) {
+    el.cupTop3Period.textContent = pointsMonthLabel(monthKey);
+  }
+  if (el.cupTop3Previous) {
+    el.cupTop3Previous.disabled = viewingPrevious;
+    el.cupTop3Previous.setAttribute("aria-pressed", viewingPrevious ? "true" : "false");
+  }
+  if (el.cupTop3Next) {
+    el.cupTop3Next.disabled = !viewingPrevious;
+    el.cupTop3Next.setAttribute("aria-pressed", viewingPrevious ? "false" : "true");
+  }
+
+  if (loading) {
+    el.cupCurrentRankingStatus.textContent = viewingPrevious
+      ? "Carregando o pódio do mês anterior…"
+      : "Carregando o pódio atual…";
     el.cupCurrentTop3.innerHTML = '<li class="cup-current-top3-empty">Buscando colocações…</li>';
     return;
   }
 
-  if (medalRankingError) {
-    el.cupCurrentRankingStatus.textContent = medalRankingError;
+  if (error) {
+    el.cupCurrentRankingStatus.textContent = error;
     el.cupCurrentTop3.innerHTML = '<li class="cup-current-top3-empty">O pódio ainda não pôde ser carregado.</li>';
     return;
   }
 
-  const rows = cupTopThreeRows();
-  el.cupCurrentRankingStatus.textContent = `${pointsMonthLabel(currentMonthKey())} · somente os pontos totais são públicos.`;
+  el.cupCurrentRankingStatus.textContent = viewingPrevious
+    ? `${pointsMonthLabel(monthKey)} · resultado limitado ao Top 3.`
+    : `${pointsMonthLabel(monthKey)} · somente os pontos totais são públicos.`;
   el.cupCurrentTop3.innerHTML = rows.length
     ? rows.map(cupTopThreeMarkup).join("")
-    : '<li class="cup-current-top3-empty">Ainda não há participantes pontuando neste mês.</li>';
+    : `<li class="cup-current-top3-empty">${viewingPrevious
+        ? "Ainda não há resultado disponível para o mês anterior."
+        : "Ainda não há participantes pontuando neste mês."}</li>`;
 }
 
-function renderCupPreviousPodium() {
-  if (!el.cupPreviousPodium || !el.cupPreviousPodiumStatus) return;
+function showCupTop3Current() {
+  cupTop3View = "current";
+  renderCupCurrentRankingSummary();
+}
 
-  const monthKey = previousMonthKey();
-  if (el.cupPreviousPodiumPeriod) {
-    el.cupPreviousPodiumPeriod.textContent = pointsMonthLabel(monthKey);
-  }
-
-  if (cupPreviousPodiumLoading) {
-    el.cupPreviousPodiumStatus.textContent = "Buscando o último pódio…";
-    el.cupPreviousPodium.innerHTML = '<li class="cup-current-top3-empty">Consultando o mês anterior…</li>';
-    return;
-  }
-
-  if (cupPreviousPodiumError) {
-    el.cupPreviousPodiumStatus.textContent = cupPreviousPodiumError;
-    el.cupPreviousPodium.innerHTML = '<li class="cup-current-top3-empty">Não foi possível carregar o último pódio.</li>';
-    return;
-  }
-
-  el.cupPreviousPodiumStatus.textContent = cupPreviousPodiumRows.length
-    ? `${pointsMonthLabel(monthKey)} · resultado limitado ao Top 3.`
-    : `Nenhum pódio registrado em ${pointsMonthLabel(monthKey)}.`;
-
-  el.cupPreviousPodium.innerHTML = cupPreviousPodiumRows.length
-    ? cupPreviousPodiumRows.map(cupTopThreeMarkup).join("")
-    : '<li class="cup-current-top3-empty">Ainda não há resultado disponível para o mês anterior.</li>';
+function showCupTop3Previous() {
+  cupTop3View = "previous";
+  renderCupCurrentRankingSummary();
+  loadCupPreviousPodium({ force: true });
 }
 
 async function loadCupPreviousPodium({ force = false } = {}) {
@@ -3119,14 +3127,14 @@ async function loadCupPreviousPodium({ force = false } = {}) {
   const signature = `${currentUser}:${monthKey}`;
 
   if (!force && cupPreviousPodiumSignature === signature && !cupPreviousPodiumError) {
-    renderCupPreviousPodium();
+    renderCupCurrentRankingSummary();
     return;
   }
 
   cupPreviousPodiumSignature = signature;
   cupPreviousPodiumLoading = true;
   cupPreviousPodiumError = "";
-  renderCupPreviousPodium();
+  renderCupCurrentRankingSummary();
 
   try {
     const { data, error } = await supabaseClient.rpc("get_monthly_points_ranking", {
@@ -3149,7 +3157,7 @@ async function loadCupPreviousPodium({ force = false } = {}) {
       : "Sem conexão para consultar o último pódio.";
   } finally {
     cupPreviousPodiumLoading = false;
-    renderCupPreviousPodium();
+    renderCupCurrentRankingSummary();
   }
 }
 
@@ -3157,7 +3165,6 @@ function updateCupInterface() {
   populateMonthlyPointsMonthOptions(monthlyPointsStatementMonth || currentMonthKey());
   renderPersonalRankingSummary();
   renderCupCurrentRankingSummary();
-  renderCupPreviousPodium();
 
   loadMedalRanking({ quiet: medalRankingRows.length > 0 });
   loadMonthlyPointsStatement(el.monthlyPointsMonth?.value || currentMonthKey(), {
@@ -3450,8 +3457,8 @@ function cupPodiumMarkup(row) {
         </div>
       </div>
       <strong class="cup-podium-name">${safeName}</strong>
-      <span class="cup-podium-trophy" aria-hidden="true">🏆</span>
-      <span class="cup-podium-score">${row.previewPoints} pontos</span>
+      <span class="cup-podium-rank-title">${tier.title}</span>
+      <span class="cup-podium-score">${row.previewPoints} pontos no mês</span>
       ${placeholder}
     </article>
   `;
@@ -7352,6 +7359,8 @@ el.accountRankingParticipation?.addEventListener("click", toggleMedalRankingPart
 el.monthlyPointsMonth?.addEventListener("change", () => {
   loadMonthlyPointsStatement(el.monthlyPointsMonth.value);
 });
+el.cupTop3Previous?.addEventListener("click", showCupTop3Previous);
+el.cupTop3Next?.addEventListener("click", showCupTop3Current);
 el.publicAvatarOptions?.addEventListener("click", (event) => {
   const button = event.target.closest("[data-avatar-mode]");
   if (!button || button.disabled) return;
