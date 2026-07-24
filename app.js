@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.6.1";
+const APP_RELEASE_ID = "v2.6.2";
 
 
 const MATH_BURST_SYMBOLS = [

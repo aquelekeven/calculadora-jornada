@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.6.1-sem-medalhas" />
+  <link rel="stylesheet" href="styles.css?v=2.6.2-hora-extra-inteira" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -1068,29 +1068,29 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.6.1</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.6.2</h2>
         </div>
-        <span class="release-pill">V2.6.1</span>
+        <span class="release-pill">V2.6.2</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">⚖️</span>
+        <span class="release-note-icon" aria-hidden="true">⏱️</span>
         <div>
-          <strong>Medalhas separadas da competição</strong>
+          <strong>Hora extra agora pontua por hora inteira</strong>
           <p>
-            Medalhas continuam disponíveis como conquistas pessoais, mas não geram pontos
-            e não interferem na colocação da Liga CLT.
+            Cada 1 hora completa de saldo positivo no dia rende 1 ponto.
+            Assim, 1h30 vale +1 ponto e 2h valem +2 pontos.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">⏱️</span>
+        <span class="release-note-icon" aria-hidden="true">🎯</span>
         <div>
-          <strong>Ranking baseado somente na jornada</strong>
+          <strong>A jornada ideal continua valendo mais</strong>
           <p>
-            A temporada considera apenas jornada diária, almoço, saldo negativo e
-            fechamento semanal de 40 horas.
+            Trabalhar entre 7h50 e 8h10 continua rendendo +4 pontos.
+            Minutos extras incompletos não geram frações de ponto.
           </p>
         </div>
       </section>
@@ -1366,6 +1366,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.6.1-sem-medalhas"></script>
+  <script src="app.js?v=2.6.2-hora-extra-inteira"></script>
 </body>
 </html>

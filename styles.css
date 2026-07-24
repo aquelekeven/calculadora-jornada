@@ -5783,7 +5783,7 @@ html[data-theme="dark"] .cup-my-result strong{color:color-mix(in srgb,var(--rank
   .public-avatar-option{transition:none}
 }
 
-/* V2.6.1 · Temporada mensal sem influência das medalhas */
+/* V2.6.2 · Hora extra pontuada por hora inteira */
 .ranking-period-label{
   display:inline-flex;
   margin-top:5px;
