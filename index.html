@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.5-podio-ranks-navegacao" />
+  <link rel="stylesheet" href="styles.css?v=2.7.6-ranking-perfil-fogos" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -137,33 +137,13 @@
           </button>
 
 
-          <button
-            id="rankingButton"
-            class="updates-button ranking-header-button"
-            type="button"
-            aria-label="Abrir ranking da COPA CLT"
-            title="Ranking da COPA CLT"
-          >
-            <span class="updates-button-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 4h8v3.5a4 4 0 0 1-8 0V4Z"/>
-                <path d="M8 6H5.5v1.5A3.5 3.5 0 0 0 9 11M16 6h2.5v1.5A3.5 3.5 0 0 1 15 11"/>
-                <path d="M12 11.5V16M8.5 20h7M10 16h4v4h-4z"/>
-              </svg>
-            </span>
-            <span class="updates-button-label">Ranking</span>
-          </button>
-
           <div class="profile-account-group">
-            <div id="userBadge" class="account-chip">
+            <div id="userBadge" class="account-chip account-chip-clickable" role="button" tabindex="0" aria-label="Abrir Minha conta">
               <span
                 id="profileRankAnchor"
                 class="profile-rank-anchor"
-                role="button"
-                tabindex="0"
-                aria-label="Ver resumo do seu ranking"
+                aria-label="Resumo do seu ranking"
                 aria-controls="profileRankCard"
-                aria-expanded="false"
               >
                 <span id="userAvatar" class="profile-avatar small" aria-hidden="true"></span>
                 <span id="profileRankDot" class="profile-rank-dot" aria-hidden="true"></span>
@@ -178,9 +158,11 @@
 
             <button
               id="tabAccount"
-              class="account-access-button"
+              class="account-access-button hidden"
               type="button"
               aria-label="Abrir Minha conta"
+              aria-hidden="true"
+              tabindex="-1"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="8" r="3.5"/>
@@ -220,7 +202,7 @@
             <span class="ranking-kicker">🏆 COPA CLT</span>
             <strong id="rankingDockTitle">Mês atual</strong>
           </div>
-          <button id="rankingDockOpen" class="ranking-expand-button" type="button">Ver Top 10</button>
+          <button id="rankingDockOpen" class="ranking-expand-button" type="button">Ranking completo</button>
         </header>
 
         <p id="rankingDockStatus" class="ranking-status">Carregando ranking…</p>
@@ -610,11 +592,12 @@
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                   </button>
                 </div>
-                <button id="cupOpenFullRanking" class="cup-inline-action" type="button">Ver Top 10</button>
+                <button id="cupOpenFullRanking" class="cup-inline-action" type="button">Ranking completo</button>
               </div>
             </header>
             <p id="cupCurrentRankingStatus" class="muted cup-current-ranking-status">Carregando o pódio atual…</p>
             <ol id="cupCurrentTop3" class="cup-current-top3" aria-live="polite"></ol>
+            <article id="cupPreviousOwnRank" class="cup-previous-own-rank hidden" aria-live="polite"></article>
           </section>
         </div>
 
@@ -975,12 +958,31 @@
           </p>
         </section>
 
-        <section class="card block">
+        <section class="card block profile-appearance-card">
           <p class="eyebrow">Foto de perfil</p>
-          <h2>Escolha seu mascote</h2>
+          <h2>Aparência no aplicativo</h2>
           <p class="muted section-description">
-            São quatro personagens em estilo de ilustração. O desenho escolhido aparece corretamente no cabeçalho e na sua conta.
+            Escolha entre a foto da sua conta Google e o mascote. Essa opção vale para o cabeçalho e para Minha conta; o avatar público do ranking continua independente.
           </p>
+
+          <div id="profileAvatarOptions" class="profile-avatar-source-options" aria-label="Escolha da foto de perfil do aplicativo">
+            <button id="profileAvatarMascot" class="profile-avatar-source-option" data-profile-avatar-mode="mascot" type="button" aria-pressed="false">
+              <span id="profileAvatarMascotPreview" class="profile-avatar-source-preview" aria-hidden="true"></span>
+              <span><strong>Usar mascote</strong><small>Mostra o personagem escolhido abaixo.</small></span>
+              <i aria-hidden="true">✓</i>
+            </button>
+            <button id="profileAvatarGoogle" class="profile-avatar-source-option" data-profile-avatar-mode="google" type="button" aria-pressed="false">
+              <span id="profileAvatarGooglePreview" class="profile-avatar-source-preview" aria-hidden="true"></span>
+              <span><strong>Usar foto do Google</strong><small>Mostra a imagem da conta conectada.</small></span>
+              <i aria-hidden="true">✓</i>
+            </button>
+          </div>
+          <p id="profileAvatarModeStatus" class="profile-avatar-mode-status" role="status" aria-live="polite"></p>
+
+          <div class="profile-mascot-picker-head">
+            <h3>Escolha seu mascote</h3>
+            <small>Ele continua disponível mesmo quando a foto do Google estiver ativa.</small>
+          </div>
           <div id="mascotGrid" class="mascot-grid" aria-label="Escolha de mascote"></div>
 
           <div class="palette-settings">
@@ -1175,27 +1177,27 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.5</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.6</h2>
         </div>
-        <span class="release-pill">V2.7.5</span>
+        <span class="release-pill">V2.7.6</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">🏆</span>
+        <span class="release-note-icon" aria-hidden="true">✨</span>
         <div>
-          <strong>Pódio com identidade de cada rank</strong>
+          <strong>Resultado mensal com fogos do seu rank</strong>
           <p>
-            Diamante, ouro e bronze agora aparecem com bordas próprias, nome do rank e pontuação mensal, sem troféus repetidos em cada vencedor.
+            O teste de pódio ganhou fogos minimalistas na cor da sua colocação final.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">↔️</span>
+        <span class="release-note-icon" aria-hidden="true">👤</span>
         <div>
-          <strong>Mês anterior no próprio Top 3</strong>
+          <strong>Perfil mais direto</strong>
           <p>
-            Use as setas no card “Top 3 do mês” para alternar entre o pódio atual e o mês imediatamente anterior.
+            Minha conta agora abre pelo seu nome ou foto, e você pode usar a foto do Google no aplicativo.
           </p>
         </div>
       </section>
@@ -1228,10 +1230,7 @@
         </p>
       </aside>
 
-      <div class="ranking-dialog-actions ranking-dialog-actions-preview">
-        <button id="openCupPreview" class="btn secondary cup-preview-launch" type="button">
-          Teste de pódio
-        </button>
+      <div class="ranking-dialog-actions">
         <button id="rankingDialogParticipation" class="btn secondary" type="button" disabled>
           Não quero participar
         </button>
@@ -1242,6 +1241,7 @@
 
   <dialog id="cupResultDialog" class="cup-result-dialog" aria-labelledby="cupResultTitle">
     <div class="cup-result-stage">
+      <div id="cupFireworks" class="cup-fireworks rank-tier-common" aria-hidden="true"></div>
       <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar resultado mensal">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
       </button>
@@ -1462,6 +1462,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.5-podio-ranks-navegacao"></script>
+  <script src="app.js?v=2.7.6-ranking-perfil-fogos"></script>
 </body>
 </html>

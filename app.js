@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.7.5";
+const APP_RELEASE_ID = "v2.7.6";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -263,6 +263,7 @@ const el = {
   podiumTestFab: $("podiumTestFab"),
   cupResultDialog: $("cupResultDialog"),
   cupResultCard: $("cupResultCard"),
+  cupFireworks: $("cupFireworks"),
   cupConfetti: $("cupConfetti"),
   cupResultPeriod: $("cupResultPeriod"),
   cupBoardPeriod: $("cupBoardPeriod"),
@@ -291,6 +292,12 @@ const el = {
   avatarModeMascotPreview: $("avatarModeMascotPreview"),
   avatarModeInitialsPreview: $("avatarModeInitialsPreview"),
   publicAvatarSettingsStatus: $("publicAvatarSettingsStatus"),
+  profileAvatarOptions: $("profileAvatarOptions"),
+  profileAvatarMascot: $("profileAvatarMascot"),
+  profileAvatarGoogle: $("profileAvatarGoogle"),
+  profileAvatarMascotPreview: $("profileAvatarMascotPreview"),
+  profileAvatarGooglePreview: $("profileAvatarGooglePreview"),
+  profileAvatarModeStatus: $("profileAvatarModeStatus"),
   monthlyPointsMonth: $("monthlyPointsMonth"),
   monthlyPointsTotal: $("monthlyPointsTotal"),
   monthlyPointsStatus: $("monthlyPointsStatus"),
@@ -348,6 +355,7 @@ const el = {
   cupOpenFullRanking: $("cupOpenFullRanking"),
   cupCurrentRankingStatus: $("cupCurrentRankingStatus"),
   cupCurrentTop3: $("cupCurrentTop3"),
+  cupPreviousOwnRank: $("cupPreviousOwnRank"),
   cupTop3Previous: $("cupTop3Previous"),
   cupTop3Next: $("cupTop3Next"),
   cupTop3Period: $("cupTop3Period"),
@@ -528,6 +536,7 @@ let cupPreviousPodiumRows = [];
 let cupPreviousPodiumLoading = false;
 let cupPreviousPodiumError = "";
 let cupPreviousPodiumSignature = "";
+let cupPreviousOwnSummary = null;
 let cupTop3View = "current";
 
 function accounts() {
@@ -636,6 +645,7 @@ function createCloudAccount(authUser) {
     authProvider: "google",
     createdAt: new Date().toISOString(),
     mascot: DEFAULT_MASCOT,
+    profileAvatarMode: "mascot",
     palette: DEFAULT_PALETTE,
     paletteIndependent: false,
     salarySettings: { ...DEFAULT_SALARY_SETTINGS },
@@ -658,6 +668,9 @@ function normalizeCloudAccount(account, authUser) {
   normalized.firstName = normalizeName(normalized.firstName) || identity.firstName;
   normalized.lastName = normalizeName(normalized.lastName) || identity.lastName;
   normalized.mascot = ensureMascot(normalized);
+  normalized.profileAvatarMode = ["mascot", "google"].includes(normalized.profileAvatarMode)
+    ? normalized.profileAvatarMode
+    : "mascot";
   normalized.palette = ensurePalette(normalized);
   normalized.paletteIndependent = normalized.paletteIndependent === true;
   normalized.salarySettings = {
@@ -1427,15 +1440,17 @@ function updateAccountInterface() {
 
   applyPalette(palette);
 
-  el.userAvatar.innerHTML = mascotMarkup(mascot);
+  const selectedProfileAvatar = profileAvatarMarkup(user);
+  el.userAvatar.innerHTML = selectedProfileAvatar;
   el.userBadgeText.textContent = name;
 
-  el.accountAvatar.innerHTML = mascotMarkup(mascot);
+  el.accountAvatar.innerHTML = selectedProfileAvatar;
   el.accountName.textContent = name;
   el.accountCode.textContent = user.email
     ? `Conta Google · ${user.email}`
     : "Conta Google conectada";
 
+  renderProfileAvatarModeSettings();
   renderMascotPicker();
   renderPalettePicker();
   loadSalarySettings(user);
@@ -2663,6 +2678,85 @@ function ownGoogleAvatarUrl() {
   );
 }
 
+function normalizeProfileAvatarMode(value) {
+  return String(value || "mascot").toLowerCase() === "google"
+    ? "google"
+    : "mascot";
+}
+
+function profileAvatarMarkup(user) {
+  const mode = normalizeProfileAvatarMode(user?.profileAvatarMode);
+  const googleUrl = ownGoogleAvatarUrl();
+
+  if (mode === "google" && googleUrl) {
+    const safeUrl = escapeRankingText(googleUrl);
+    return `<img src="${safeUrl}" alt="" class="profile-google-image" loading="eager" decoding="async" referrerpolicy="no-referrer" />`;
+  }
+
+  return mascotMarkup(ensureMascot(user));
+}
+
+function renderProfileAvatarModeSettings() {
+  if (!el.profileAvatarOptions) return;
+
+  const user = accounts()[currentUser];
+  if (!user) return;
+
+  const googleUrl = ownGoogleAvatarUrl();
+  const selected = normalizeProfileAvatarMode(user.profileAvatarMode);
+  const effective = selected === "google" && !googleUrl ? "mascot" : selected;
+
+  if (selected !== effective) {
+    user.profileAvatarMode = effective;
+    const allAccounts = accounts();
+    allAccounts[currentUser] = user;
+    saveAccounts(allAccounts);
+  }
+
+  if (el.profileAvatarMascotPreview) {
+    el.profileAvatarMascotPreview.innerHTML = mascotMarkup(ensureMascot(user));
+  }
+  if (el.profileAvatarGooglePreview) {
+    el.profileAvatarGooglePreview.innerHTML = googleUrl
+      ? `<img src="${escapeRankingText(googleUrl)}" alt="" class="profile-google-image" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`
+      : '<span class="profile-avatar-source-placeholder" aria-hidden="true">G</span>';
+  }
+
+  [[el.profileAvatarMascot, "mascot"], [el.profileAvatarGoogle, "google"]].forEach(([button, mode]) => {
+    if (!button) return;
+    const active = effective === mode;
+    button.classList.toggle("selected", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+
+  if (el.profileAvatarGoogle) {
+    el.profileAvatarGoogle.disabled = !googleUrl;
+  }
+  if (el.profileAvatarModeStatus) {
+    el.profileAvatarModeStatus.textContent = googleUrl
+      ? (effective === "google" ? "Foto do Google ativa no aplicativo." : "Mascote ativo no aplicativo.")
+      : "Sua conta não forneceu uma foto do Google; o mascote permanece ativo.";
+  }
+}
+
+function setProfileAvatarMode(mode) {
+  const normalizedMode = normalizeProfileAvatarMode(mode);
+  const googleUrl = ownGoogleAvatarUrl();
+  if (normalizedMode === "google" && !googleUrl) {
+    return toast("Sua conta Google não forneceu uma foto de perfil.", "error");
+  }
+
+  const allAccounts = accounts();
+  const user = allAccounts[currentUser];
+  if (!user) return;
+
+  user.profileAvatarMode = normalizedMode;
+  allAccounts[currentUser] = user;
+  saveAccounts(allAccounts);
+  updateAccountInterface();
+  toast(normalizedMode === "google" ? "Foto do Google ativada no aplicativo." : "Mascote ativado no aplicativo.");
+}
+
 function normalizePublicAvatarMode(value) {
   const mode = String(value || "initials").toLowerCase();
   return ["google", "mascot", "initials"].includes(mode)
@@ -3084,6 +3178,14 @@ function renderCupCurrentRankingSummary() {
     el.cupTop3Next.disabled = !viewingPrevious;
     el.cupTop3Next.setAttribute("aria-pressed", viewingPrevious ? "false" : "true");
   }
+  if (el.cupOpenFullRanking) {
+    el.cupOpenFullRanking.classList.toggle("hidden", viewingPrevious);
+    el.cupOpenFullRanking.disabled = viewingPrevious;
+  }
+  if (el.cupPreviousOwnRank) {
+    el.cupPreviousOwnRank.classList.add("hidden");
+    el.cupPreviousOwnRank.innerHTML = "";
+  }
 
   if (loading) {
     el.cupCurrentRankingStatus.textContent = viewingPrevious
@@ -3107,6 +3209,21 @@ function renderCupCurrentRankingSummary() {
     : `<li class="cup-current-top3-empty">${viewingPrevious
         ? "Ainda não há resultado disponível para o mês anterior."
         : "Ainda não há participantes pontuando neste mês."}</li>`;
+
+  if (viewingPrevious && el.cupPreviousOwnRank) {
+    const ownPosition = Number(cupPreviousOwnSummary?.position);
+    const ownPoints = Math.round(Number(cupPreviousOwnSummary?.total_points) || 0);
+    if (ownPosition > 3) {
+      const tier = rankTierForPosition(ownPosition);
+      applyRankTierClass(el.cupPreviousOwnRank, tier.key);
+      el.cupPreviousOwnRank.innerHTML = `
+        <span>Sua posição em ${escapeRankingText(pointsMonthLabel(monthKey))}</span>
+        <strong>${ownPosition}º lugar · ${tier.title}</strong>
+        <small>${ownPoints} ${ownPoints === 1 ? "ponto" : "pontos"}</small>
+      `;
+      el.cupPreviousOwnRank.classList.remove("hidden");
+    }
+  }
 }
 
 function showCupTop3Current() {
@@ -3137,21 +3254,31 @@ async function loadCupPreviousPodium({ force = false } = {}) {
   renderCupCurrentRankingSummary();
 
   try {
-    const { data, error } = await supabaseClient.rpc("get_monthly_points_ranking", {
-      p_month_key: monthKey,
-      p_limit: 3
-    });
-    if (error) throw error;
+    const [rankingResult, ownSummaryResult] = await Promise.all([
+      supabaseClient.rpc("get_monthly_points_ranking", {
+        p_month_key: monthKey,
+        p_limit: 3
+      }),
+      supabaseClient.rpc("get_my_monthly_points_summary", {
+        p_month_key: monthKey
+      })
+    ]);
+    if (rankingResult.error) throw rankingResult.error;
+    if (ownSummaryResult.error) throw ownSummaryResult.error;
 
-    cupPreviousPodiumRows = Array.isArray(data)
-      ? data.map(normalizeRankingRow)
+    cupPreviousPodiumRows = Array.isArray(rankingResult.data)
+      ? rankingResult.data.map(normalizeRankingRow)
           .filter((row) => Number(row.position) >= 1 && Number(row.position) <= 3)
           .slice(0, 3)
       : [];
+    cupPreviousOwnSummary = Array.isArray(ownSummaryResult.data)
+      ? ownSummaryResult.data[0] || null
+      : ownSummaryResult.data || null;
     cupPreviousPodiumError = "";
   } catch (error) {
     console.error("Falha ao carregar o pódio do mês anterior da COPA CLT.", error);
     cupPreviousPodiumRows = [];
+    cupPreviousOwnSummary = null;
     cupPreviousPodiumError = navigator.onLine
       ? "O pódio do mês anterior está temporariamente indisponível."
       : "Sem conexão para consultar o último pódio.";
@@ -3390,6 +3517,7 @@ function cupPreviewFallbackRows() {
 function cupPreviewRows() {
   const fallback = cupPreviewFallbackRows();
   const realRows = Array.isArray(medalRankingRows) ? medalRankingRows : [];
+  const hasRealRanking = realRows.length > 0;
   const byPosition = new Map();
 
   realRows.forEach((row) => {
@@ -3405,9 +3533,19 @@ function cupPreviewRows() {
 
   fallback.forEach((row) => {
     if (byPosition.has(row.position)) return;
+    const fallbackRow = hasRealRanking && row.isCurrentUser
+      ? {
+          ...row,
+          displayName: "Participante 1",
+          avatarMode: "initials",
+          avatarUrl: "",
+          isCurrentUser: false,
+          isPreviewPlaceholder: true
+        }
+      : row;
     byPosition.set(row.position, {
-      ...row,
-      previewPoints: row.points
+      ...fallbackRow,
+      previewPoints: fallbackRow.points
     });
   });
 
@@ -3514,6 +3652,9 @@ function renderCupPreview() {
   }
 
   const own = rows.find((row) => row.isCurrentUser);
+  const ownTier = rankTierForPosition(own?.position || monthlyPointsCurrentPosition || 4);
+  applyRankTierClass(el.cupResultCard, ownTier.key);
+  renderCupFireworks(ownTier.key);
 
   if (el.cupMyResult) {
     if (own && own.position > 3) {
@@ -3530,6 +3671,39 @@ function renderCupPreview() {
       el.cupMyResult.innerHTML = "";
     }
   }
+}
+
+function renderCupFireworks(tierKey = "common") {
+  if (!el.cupFireworks) return;
+
+  applyRankTierClass(el.cupFireworks, tierKey);
+  el.cupFireworks.innerHTML = "";
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const bursts = [
+    { x: "18%", y: "24%", delay: "0s", scale: ".88" },
+    { x: "82%", y: "28%", delay: ".85s", scale: ".72" },
+    { x: "72%", y: "72%", delay: "1.55s", scale: ".58" }
+  ];
+
+  bursts.forEach((config, burstIndex) => {
+    const burst = document.createElement("span");
+    burst.className = "cup-firework-burst";
+    burst.style.setProperty("--firework-x", config.x);
+    burst.style.setProperty("--firework-y", config.y);
+    burst.style.setProperty("--firework-delay", config.delay);
+    burst.style.setProperty("--firework-scale", config.scale);
+
+    for (let index = 0; index < 10; index += 1) {
+      const spark = document.createElement("i");
+      spark.style.setProperty("--spark-angle", `${index * 36 + burstIndex * 7}deg`);
+      spark.style.setProperty("--spark-distance", `${44 + (index % 3) * 9}px`);
+      burst.appendChild(spark);
+    }
+
+    el.cupFireworks.appendChild(burst);
+  });
 }
 
 function createCupConfetti() {
@@ -3574,6 +3748,7 @@ function openCupPreview() {
 
 function closeCupPreview() {
   if (el.cupResultDialog?.open) el.cupResultDialog.close();
+  if (el.cupFireworks) el.cupFireworks.innerHTML = "";
 }
 
 async function toggleMedalRankingParticipation() {
@@ -7366,6 +7541,11 @@ el.publicAvatarOptions?.addEventListener("click", (event) => {
   if (!button || button.disabled) return;
   setPublicRankingAvatarMode(button.dataset.avatarMode);
 });
+el.profileAvatarOptions?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-profile-avatar-mode]");
+  if (!button || button.disabled) return;
+  setProfileAvatarMode(button.dataset.profileAvatarMode);
+});
 el.openCupPreview?.addEventListener("click", openCupPreview);
 el.podiumTestFab?.addEventListener("click", openCupPreview);
 el.closeCupResultTop?.addEventListener("click", () => closeCupPreview());
@@ -7374,16 +7554,16 @@ el.cupResultDialog?.addEventListener("click", (event) => {
   if (event.target === el.cupResultDialog) closeCupPreview();
 });
 
-el.profileRankAnchor?.addEventListener("click", (event) => {
-  event.stopPropagation();
-  setProfileRankPopover(!el.profileRankAnchor.classList.contains("is-open"));
+el.userBadge?.addEventListener("click", () => {
+  setProfileRankPopover(false);
+  showTab("account");
 });
-el.profileRankAnchor?.addEventListener("keydown", (event) => {
+el.userBadge?.addEventListener("keydown", (event) => {
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
-    setProfileRankPopover(!el.profileRankAnchor.classList.contains("is-open"));
+    setProfileRankPopover(false);
+    showTab("account");
   }
-  if (event.key === "Escape") setProfileRankPopover(false);
 });
 document.addEventListener("click", (event) => {
   if (!el.profileRankAnchor?.contains(event.target)) setProfileRankPopover(false);
