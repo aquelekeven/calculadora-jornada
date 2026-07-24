@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.7-novos-mascotes-tema-unico" />
+  <link rel="stylesheet" href="styles.css?v=2.7.8-carrossel-mascotes" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -983,7 +983,12 @@
             <h3>Escolha seu mascote</h3>
             <small>Ele continua disponível mesmo quando a foto do Google estiver ativa.</small>
           </div>
-          <div id="mascotGrid" class="mascot-grid" aria-label="Escolha de mascote"></div>
+          <div class="mascot-carousel-shell" aria-label="Escolha de mascote">
+            <button id="mascotPrev" class="mascot-carousel-nav" type="button" aria-label="Ver mascotes anteriores">‹</button>
+            <div id="mascotGrid" class="mascot-grid mascot-carousel-track" aria-label="Escolha de mascote"></div>
+            <button id="mascotNext" class="mascot-carousel-nav" type="button" aria-label="Ver próximos mascotes">›</button>
+          </div>
+          <div id="mascotDots" class="mascot-carousel-dots" aria-label="Navegação do carrossel de mascotes"></div>
         </section>
 
         <section class="card block salary-settings-card">
@@ -1439,6 +1444,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.7-novos-mascotes-tema-unico"></script>
+  <script src="app.js?v=2.7.8-carrossel-mascotes"></script>
 </body>
 </html>

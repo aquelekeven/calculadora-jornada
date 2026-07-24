@@ -83,6 +83,7 @@ function initializeMathBurst() {
 }
 
 const DEFAULT_MASCOT = "panda";
+const MASCOT_CAROUSEL_STEP = 3;
 const DEFAULT_PALETTE = "panda";
 const LEGACY_MASCOT_MAP = { urso: "panda", raposa: "pato", coruja: "coruja" };
 const LEGACY_PALETTE_MAP = { urso: "panda", raposa: "pato", coruja: "coruja" };
@@ -136,6 +137,7 @@ const MASCOTS = {
   dragao: { label: "Dragão", image: "mascot-dragao.webp" },
   gato: { label: "Gato", image: "mascot-gato.webp" }
 };
+const MASCOT_IDS = Object.keys(MASCOTS);
 
 function mascotMarkup(id) {
   const mascot = MASCOTS[id] || MASCOTS[DEFAULT_MASCOT];
@@ -363,6 +365,9 @@ const el = {
   accountName: $("accountName"),
   accountCode: $("accountCode"),
   mascotGrid: $("mascotGrid"),
+  mascotPrev: $("mascotPrev"),
+  mascotNext: $("mascotNext"),
+  mascotDots: $("mascotDots"),
   paletteIndependent: $("paletteIndependent"),
   paletteGrid: $("paletteGrid"),
   paletteLinkStatus: $("paletteLinkStatus"),
@@ -1043,29 +1048,80 @@ function openApp(code) {
 }
 
 
+function getMascotCarouselStep() {
+  const firstCard = el.mascotGrid?.querySelector(".mascot-option");
+  if (!firstCard) return 0;
+  const styles = window.getComputedStyle(el.mascotGrid);
+  const gap = parseFloat(styles.columnGap || styles.gap || 0) || 0;
+  return firstCard.getBoundingClientRect().width + gap;
+}
+
+function scrollMascotIntoView(mascotId, behavior = "smooth") {
+  const button = el.mascotGrid?.querySelector(`[data-mascot="${mascotId}"]`);
+  if (!button) return;
+  button.scrollIntoView({ behavior, inline: "center", block: "nearest" });
+}
+
+function moveMascotCarousel(direction = 1) {
+  if (!el.mascotGrid) return;
+  const step = getMascotCarouselStep();
+  if (!step) return;
+  el.mascotGrid.scrollBy({
+    left: direction * step * MASCOT_CAROUSEL_STEP,
+    behavior: "smooth"
+  });
+}
+
 function renderMascotPicker() {
   const user = accounts()[currentUser];
   if (!user || !el.mascotGrid) return;
 
   const selected = ensureMascot(user);
 
-  el.mascotGrid.innerHTML = Object.entries(MASCOTS)
-    .map(([id, mascot]) => `
-      <button
-        class="mascot-option ${id === selected ? "selected" : ""}"
-        data-mascot="${id}"
-        type="button"
-        aria-label="Usar mascote ${mascot.label}"
-        title="${mascot.label}"
-        aria-pressed="${id === selected}"
-      >
-        <span class="profile-avatar" aria-hidden="true">
-          ${mascotMarkup(id)}
-        </span>
-        <span class="mascot-selected-check" aria-hidden="true">✓</span>
-      </button>
-    `)
+  el.mascotGrid.innerHTML = MASCOT_IDS
+    .map((id) => {
+      const mascot = MASCOTS[id];
+      return `
+        <button
+          class="mascot-option ${id === selected ? "selected" : ""}"
+          data-mascot="${id}"
+          type="button"
+          aria-label="Usar mascote ${mascot.label}"
+          title="${mascot.label}"
+          aria-pressed="${id === selected}"
+        >
+          <span class="profile-avatar" aria-hidden="true">
+            ${mascotMarkup(id)}
+          </span>
+          <span class="mascot-selected-check" aria-hidden="true">✓</span>
+        </button>
+      `;
+    })
     .join("");
+
+  if (el.mascotDots) {
+    el.mascotDots.innerHTML = MASCOT_IDS
+      .map((id) => `
+        <button
+          class="mascot-carousel-dot ${id === selected ? "active" : ""}"
+          data-mascot="${id}"
+          type="button"
+          aria-label="Ir para ${MASCOTS[id].label}"
+          aria-pressed="${id === selected}"
+        ></button>
+      `)
+      .join("");
+
+    el.mascotDots
+      .querySelectorAll(".mascot-carousel-dot")
+      .forEach((dot) => {
+        dot.addEventListener("click", () => {
+          const mascotId = dot.dataset.mascot;
+          scrollMascotIntoView(mascotId);
+          selectMascot(mascotId);
+        });
+      });
+  }
 
   el.mascotGrid
     .querySelectorAll(".mascot-option")
@@ -1074,6 +1130,11 @@ function renderMascotPicker() {
         selectMascot(button.dataset.mascot);
       });
     });
+
+  if (el.mascotPrev) el.mascotPrev.onclick = () => moveMascotCarousel(-1);
+  if (el.mascotNext) el.mascotNext.onclick = () => moveMascotCarousel(1);
+
+  requestAnimationFrame(() => scrollMascotIntoView(selected, "auto"));
 }
 
 function renderPalettePicker() {
