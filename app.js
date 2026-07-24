@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.7.2";
+const APP_RELEASE_ID = "v2.7.3";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -262,6 +262,7 @@ const el = {
   openCupPreview: $("openCupPreview"),
   podiumTestFab: $("podiumTestFab"),
   cupResultDialog: $("cupResultDialog"),
+  cupResultCard: $("cupResultCard"),
   cupConfetti: $("cupConfetti"),
   cupResultPeriod: $("cupResultPeriod"),
   cupBoardPeriod: $("cupBoardPeriod"),
@@ -3534,12 +3535,15 @@ function renderCupPreview() {
   }
 
   const own = rows.find((row) => row.isCurrentUser);
+  const ownTier = rankTierForPosition(own?.position);
+  applyRankTierClass(el.cupResultCard, ownTier.key);
+
   if (el.cupMyResult) {
     if (own && own.position > 3) {
       const tier = rankTierForPosition(own.position);
       applyRankTierClass(el.cupMyResult, tier.key);
       el.cupMyResult.innerHTML = `
-        <span>Sua colocação nesta prévia</span>
+        <span>Sua colocação no resultado</span>
         <strong>${own.position}º lugar · ${tier.title}</strong>
         <small>${own.previewPoints} pontos no mês</small>
       `;

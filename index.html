@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.2-podio-clean-teste" />
+  <link rel="stylesheet" href="styles.css?v=2.7.3-resultado-mensal-rank-glow" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -1181,27 +1181,27 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.2</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.3</h2>
         </div>
-        <span class="release-pill">V2.7.2</span>
+        <span class="release-pill">V2.7.3</span>
       </header>
 
       <section class="release-note featured">
         <span class="release-note-icon" aria-hidden="true">🏆</span>
         <div>
-          <strong>Novo teste de pódio</strong>
+          <strong>Resultado mensal mais clean</strong>
           <p>
-            A prévia da COPA CLT ganhou um layout clean inspirado em painel de liderança, com Top 3 em destaque e classificação logo abaixo.
+            A tela da COPA CLT agora aparece como um card branco flutuante, com o aplicativo desfocado ao fundo e sem áreas visuais desnecessárias.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">🧪</span>
+        <span class="release-note-icon" aria-hidden="true">✨</span>
         <div>
-          <strong>Botão flutuante temporário</strong>
+          <strong>Brilho conforme sua colocação</strong>
           <p>
-            Use “Teste de pódio” para abrir a prévia a qualquer momento enquanto ajustamos o resultado mensal definitivo.
+            O card inteiro pulsa na cor do seu rank naquele resultado: diamante, ouro, bronze ou cinza.
           </p>
         </div>
       </section>
@@ -1249,44 +1249,32 @@
 
   <dialog id="cupResultDialog" class="cup-result-dialog" aria-labelledby="cupResultTitle">
     <div class="cup-result-stage">
-      <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar teste de pódio">
+      <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar resultado mensal">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
       </button>
 
-      <div class="cup-ticket">
+      <div id="cupResultCard" class="cup-ticket rank-tier-common">
         <div class="cup-ticket-top" aria-hidden="true">
           <span>🏆</span>
         </div>
 
         <header class="cup-result-heading">
-          <p>Resultado parcial</p>
-          <h2 id="cupResultTitle">COPA CLT</h2>
-          <span id="cupResultPeriod">Julho de 2026</span>
+          <p>🏆 COPA CLT</p>
+          <h2 id="cupResultTitle">RESULTADO DE <span id="cupResultPeriod">JULHO DE 2026</span></h2>
         </header>
 
         <section class="cup-podium-section" aria-label="Top 3 da temporada">
           <div id="cupPodium" class="cup-podium"></div>
         </section>
 
-        <nav class="cup-scope-tabs" aria-label="Período da classificação">
-          <button type="button" disabled>Geral</button>
-          <button class="active" type="button" aria-current="page">Mês</button>
-          <button type="button" disabled>Semana</button>
-          <button type="button" disabled>Dia</button>
-        </nav>
-
         <section class="cup-result-board">
           <header class="cup-board-head">
             <div>
-              <p class="eyebrow">Classificação atual</p>
+              <p class="eyebrow">Classificação final</p>
               <h3 id="cupBoardTitle">Demais participantes</h3>
             </div>
             <span id="cupBoardPeriod">Julho de 2026</span>
           </header>
-
-          <p class="cup-preview-note">
-            Tela temporária de teste. O resultado mensal definitivo será exibido no primeiro dia útil do mês seguinte.
-          </p>
 
           <ol id="cupResultList" class="cup-result-list" aria-live="polite"></ol>
 
@@ -1482,6 +1470,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.2-podio-clean-teste"></script>
+  <script src="app.js?v=2.7.3-resultado-mensal-rank-glow"></script>
 </body>
 </html>

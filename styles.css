@@ -6350,3 +6350,182 @@ html[data-theme="dark"] .rank-tier-common{--rank-deep:#c0c6d0}
 @media(prefers-reduced-motion:reduce){
   .cup-nav-button::before,.cup-nav-button::after,.cup-nav-button svg,.cup-nav-spark{animation:none!important}
 }
+
+
+/* V2.7.3 TESTE · Resultado mensal flutuante com brilho do rank */
+.cup-result-dialog{
+  width:min(790px,calc(100vw - 22px));
+  max-width:790px;
+  height:auto;
+  max-height:calc(100dvh - 22px);
+  padding:0;
+  border:0;
+  border-radius:30px;
+  overflow:visible;
+  background:transparent;
+  color:#241144;
+  box-shadow:none;
+}
+.cup-result-dialog::backdrop{
+  background:rgba(20,22,28,.34);
+  -webkit-backdrop-filter:blur(14px) saturate(.82);
+  backdrop-filter:blur(14px) saturate(.82);
+}
+.cup-result-stage{
+  position:relative;
+  display:grid;
+  max-height:calc(100dvh - 22px);
+  min-height:0;
+  padding:34px 30px 30px;
+  overflow:auto;
+  background:transparent;
+}
+.cup-result-back{
+  top:46px;
+  left:44px;
+  width:39px;
+  height:39px;
+  border:1px solid #e6e0ec;
+  background:rgba(255,255,255,.94);
+  color:#4b3b59;
+  box-shadow:0 8px 22px rgba(31,22,40,.12);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+.cup-result-back:hover{
+  border-color:color-mix(in srgb,var(--rank-color,#a8aeab) 45%,#e6e0ec);
+  background:#fff;
+  color:var(--rank-deep,#5f666b);
+}
+.cup-ticket{
+  width:min(720px,100%);
+  min-height:0;
+  margin:auto;
+  padding:54px 36px 30px;
+  border:1px solid color-mix(in srgb,var(--rank-color) 42%,#e9e3ee);
+  border-radius:18px 18px 28px 28px;
+  background:#fff;
+  animation:cup-card-rank-glow 2.35s ease-in-out infinite;
+  will-change:box-shadow;
+}
+.cup-ticket::before{
+  background:radial-gradient(circle at 13px 13px,#fff 12px,transparent 12.5px) 0 0/26px 26px repeat-x;
+}
+.cup-ticket-top{
+  color:var(--rank-deep);
+}
+.cup-result-heading{
+  gap:7px;
+  padding:0 54px;
+}
+.cup-result-heading p{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:28px;
+  padding:5px 12px;
+  border:1px solid color-mix(in srgb,var(--rank-color) 32%,#ebe5f0);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--rank-color) 8%,#fff);
+  color:var(--rank-deep);
+  font-size:.68rem;
+  letter-spacing:.11em;
+}
+.cup-result-heading h2{
+  color:#291839;
+  font-size:clamp(1.5rem,4vw,2.15rem);
+  line-height:1.05;
+  letter-spacing:-.035em;
+}
+.cup-result-heading h2 #cupResultPeriod{
+  display:block;
+  margin-top:3px;
+  color:var(--rank-deep);
+  font-size:clamp(1.02rem,3.1vw,1.45rem);
+  font-weight:950;
+  letter-spacing:-.018em;
+  text-transform:uppercase;
+}
+.cup-podium-section{
+  margin-top:20px;
+}
+.cup-result-board{
+  padding-top:18px;
+}
+.cup-board-head{
+  padding-top:14px;
+  border-top:1px solid #eee9f2;
+}
+.cup-board-head h3{
+  color:#2e1c3e;
+}
+.cup-my-result{
+  border-color:color-mix(in srgb,var(--rank-color) 42%,#ded5e9);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--rank-color) 8%,transparent);
+}
+@keyframes cup-card-rank-glow{
+  0%,100%{
+    box-shadow:
+      0 24px 66px rgba(30,23,37,.24),
+      0 0 0 1px color-mix(in srgb,var(--rank-color) 34%,transparent),
+      0 0 18px color-mix(in srgb,var(--rank-color) 28%,transparent);
+  }
+  50%{
+    box-shadow:
+      0 30px 76px rgba(30,23,37,.27),
+      0 0 0 3px color-mix(in srgb,var(--rank-color) 62%,transparent),
+      0 0 46px color-mix(in srgb,var(--rank-color) 58%,transparent);
+  }
+}
+@media(max-width:700px){
+  .cup-result-dialog{
+    width:calc(100vw - 10px);
+    height:auto;
+    max-height:calc(100dvh - 10px);
+    border-radius:24px;
+  }
+  .cup-result-stage{
+    max-height:calc(100dvh - 10px);
+    padding:27px 7px 12px;
+  }
+  .cup-result-back{
+    top:38px;
+    left:17px;
+    width:36px;
+    height:36px;
+  }
+  .cup-ticket{
+    min-height:0;
+    padding:48px 15px 20px;
+    border-radius:15px 15px 22px 22px;
+  }
+  .cup-result-heading{
+    padding:0 38px;
+  }
+  .cup-result-heading p{
+    min-height:25px;
+    padding:4px 9px;
+    font-size:.57rem;
+  }
+  .cup-result-heading h2{
+    font-size:1.35rem;
+  }
+  .cup-result-heading h2 #cupResultPeriod{
+    font-size:.94rem;
+  }
+  .cup-podium-section{
+    margin-top:14px;
+  }
+  .cup-result-board{
+    padding-top:14px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .cup-ticket{
+    animation:none;
+    box-shadow:
+      0 24px 66px rgba(30,23,37,.24),
+      0 0 0 2px color-mix(in srgb,var(--rank-color) 48%,transparent),
+      0 0 28px color-mix(in srgb,var(--rank-color) 38%,transparent);
+  }
+}
