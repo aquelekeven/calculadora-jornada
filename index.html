@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.6.2-hora-extra-inteira" />
+  <link rel="stylesheet" href="styles.css?v=2.7-copa-clt-hub" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -141,8 +141,8 @@
             id="rankingButton"
             class="updates-button ranking-header-button"
             type="button"
-            aria-label="Abrir ranking mensal de pontos"
-            title="Ranking mensal de pontos"
+            aria-label="Abrir ranking da COPA CLT"
+            title="Ranking da COPA CLT"
           >
             <span class="updates-button-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -217,7 +217,7 @@
       <aside id="rankingDock" class="ranking-dock hidden" aria-label="Ranking mensal de pontos">
         <header class="ranking-dock-head">
           <div>
-            <span class="ranking-kicker">⚡ Temporada CLT</span>
+            <span class="ranking-kicker">🏆 COPA CLT</span>
             <strong id="rankingDockTitle">Mês atual</strong>
           </div>
           <button id="rankingDockOpen" class="ranking-expand-button" type="button">Ver Top 10</button>
@@ -266,19 +266,21 @@
         </button>
       </nav>
 
-      <div class="stats-navigation-quadrant">
+      <div class="cup-navigation-quadrant">
         <button
-          id="statsButton"
-          class="stats-nav-button stats-launcher"
+          id="cupButton"
+          class="cup-nav-button cup-launcher"
           type="button"
-          aria-label="Abrir Dados inúteis"
+          aria-label="Abrir COPA CLT"
           aria-pressed="false"
-          title="Dados inúteis"
+          title="COPA CLT"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path class="stats-star-main" d="m12 2 1.25 4.25L17.5 7.5l-4.25 1.25L12 13l-1.25-4.25L6.5 7.5l4.25-1.25L12 2Z"/>
-            <path class="stats-star-small stats-star-right" d="m18.5 13 .75 2.25L21.5 16l-2.25.75L18.5 19l-.75-2.25L15.5 16l2.25-.75L18.5 13Z"/>
-            <path class="stats-star-small stats-star-left" d="m6 14 .85 2.65L9.5 17.5l-2.65.85L6 21l-.85-2.65-2.65-.85 2.65-.85L6 14Z"/>
+            <path class="cup-nav-ribbon" d="M8 3h8v5.2a4 4 0 0 1-8 0V3Z"/>
+            <path class="cup-nav-handles" d="M8 5H4.5v1.7A4.3 4.3 0 0 0 8.8 11M16 5h3.5v1.7a4.3 4.3 0 0 1-4.3 4.3"/>
+            <path class="cup-nav-base" d="M12 12.2V17M8.5 20h7M9.5 17h5"/>
+            <path class="cup-nav-spark cup-nav-spark-one" d="m19.2 2 .55 1.65L21.4 4.2l-1.65.55-.55 1.65-.55-1.65L17 4.2l1.65-.55L19.2 2Z"/>
+            <path class="cup-nav-spark cup-nav-spark-two" d="m4.2 13 .4 1.15 1.15.4-1.15.4-.4 1.15-.4-1.15-1.15-.4 1.15-.4.4-1.15Z"/>
           </svg>
         </button>
       </div>
@@ -296,6 +298,23 @@
             <path class="medal-top" d="M7 3h4l1 5H8L7 3Zm6 0h4l-1 5h-4l1-5Z"/>
             <circle class="medal-core" cx="12" cy="15" r="4.5"/>
             <path class="medal-star" d="m12 12.4.8 1.65 1.82.26-1.31 1.27.31 1.79L12 16.5l-1.62.87.31-1.79-1.31-1.27 1.82-.26.8-1.65Z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="stats-navigation-quadrant">
+        <button
+          id="statsButton"
+          class="stats-nav-button stats-launcher"
+          type="button"
+          aria-label="Abrir Dados inúteis"
+          aria-pressed="false"
+          title="Dados inúteis"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path class="stats-star-main" d="m12 2 1.25 4.25L17.5 7.5l-4.25 1.25L12 13l-1.25-4.25L6.5 7.5l4.25-1.25L12 2Z"/>
+            <path class="stats-star-small stats-star-right" d="m18.5 13 .75 2.25L21.5 16l-2.25.75L18.5 19l-.75-2.25L15.5 16l2.25-.75L18.5 13Z"/>
+            <path class="stats-star-small stats-star-left" d="m6 14 .85 2.65L9.5 17.5l-2.65.85L6 21l-.85-2.65-2.65-.85 2.65-.85L6 14Z"/>
           </svg>
         </button>
       </div>
@@ -510,6 +529,154 @@
           </div>
           <div id="historyList" class="history-list hidden"></div>
         </section>
+      </section>
+
+      <section id="cupPanel" class="cup-hub-page hidden">
+        <div id="cupPageTop" aria-hidden="true"></div>
+
+        <div class="stats-top-actions">
+          <button id="cupBackHome" class="stats-back-home cup-back-home" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m15 18-6-6 6-6"/>
+              <path d="M9 12h10"/>
+            </svg>
+            <span>Voltar ao início</span>
+          </button>
+        </div>
+
+        <section class="card cup-hub-hero">
+          <div>
+            <p class="eyebrow">Temporada mensal</p>
+            <h2>COPA CLT</h2>
+            <p class="muted">
+              Seu desempenho, o pódio atual, o extrato privado e as conquistas das temporadas anteriores em um só lugar.
+            </p>
+          </div>
+          <div class="cup-hub-hero-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M8 3h8v5.2a4 4 0 0 1-8 0V3Z"/>
+              <path d="M8 5H4.5v1.7A4.3 4.3 0 0 0 8.8 11M16 5h3.5v1.7a4.3 4.3 0 0 1-4.3 4.3"/>
+              <path d="M12 12.2V17M8.5 20h7M9.5 17h5"/>
+            </svg>
+          </div>
+        </section>
+
+        <div class="cup-current-grid">
+          <section id="accountRankingCard" class="card block account-ranking-card cup-performance-card rank-tier-common">
+            <header class="account-ranking-head">
+              <div>
+                <p class="eyebrow">COPA CLT · mês atual</p>
+                <h2>Seu desempenho no ranking</h2>
+              </div>
+              <span id="accountRankingBadge" class="account-ranking-badge">CLT Comum</span>
+            </header>
+
+            <div class="account-ranking-grid">
+              <article>
+                <small>Posição no mês</small>
+                <strong id="accountRankPosition">—</strong>
+              </article>
+              <article>
+                <small>Título</small>
+                <strong id="accountRankTitle">Carregando…</strong>
+              </article>
+              <article>
+                <small>Pontos do mês</small>
+                <strong id="accountRankPoints">0</strong>
+              </article>
+            </div>
+
+            <p id="accountRankStatus" class="muted account-ranking-status">
+              Buscando sua colocação…
+            </p>
+
+            <button id="accountRankingParticipation" class="btn secondary account-ranking-action" type="button" disabled>
+              Não quero participar
+            </button>
+          </section>
+
+          <section class="card block cup-current-ranking-card">
+            <header class="cup-section-head">
+              <div>
+                <p class="eyebrow">Pódio provisório</p>
+                <h2>Top 3 do mês</h2>
+              </div>
+              <button id="cupOpenFullRanking" class="cup-inline-action" type="button">Ver Top 10</button>
+            </header>
+            <p id="cupCurrentRankingStatus" class="muted cup-current-ranking-status">Carregando o pódio atual…</p>
+            <ol id="cupCurrentTop3" class="cup-current-top3" aria-live="polite"></ol>
+          </section>
+        </div>
+
+        <section class="card block monthly-points-statement-card cup-statement-card">
+          <header class="monthly-points-statement-head">
+            <div>
+              <p class="eyebrow">Somente você consegue ver</p>
+              <h2>Extrato privado de pontos</h2>
+            </div>
+            <label class="monthly-points-month-field monthly-points-modern-select">
+              <span>Período do extrato</span>
+              <span class="monthly-points-select-shell">
+                <svg class="monthly-points-select-calendar" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="4" y="5.5" width="16" height="14" rx="2.5"/>
+                  <path d="M8 3.5v4M16 3.5v4M4 9.5h16"/>
+                </svg>
+                <select id="monthlyPointsMonth" aria-label="Escolher mês do extrato"></select>
+                <svg class="monthly-points-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m8 10 4 4 4-4"/>
+                </svg>
+              </span>
+            </label>
+          </header>
+
+          <div class="monthly-points-total" aria-live="polite">
+            <span>Total do período</span>
+            <strong id="monthlyPointsTotal">0 pts</strong>
+          </div>
+
+          <p id="monthlyPointsStatus" class="muted monthly-points-status">
+            Abra a COPA CLT para carregar seu extrato.
+          </p>
+
+          <div class="monthly-points-statement-scroll" tabindex="0" aria-label="Lançamentos do extrato privado">
+            <ol id="monthlyPointsStatement" class="monthly-points-statement-list" aria-live="polite"></ol>
+          </div>
+
+          <aside class="monthly-points-privacy-note">
+            <strong>Privado de verdade</strong>
+            <p>
+              Os demais participantes veem somente seu total mensal. Horários, almoço,
+              saldos, abonos e os motivos de cada lançamento aparecem apenas aqui.
+            </p>
+          </aside>
+        </section>
+
+        <section class="card block cup-achievements-card">
+          <header class="cup-section-head">
+            <div>
+              <p class="eyebrow">Histórico pessoal</p>
+              <h2>Suas conquistas na COPA CLT</h2>
+            </div>
+            <span class="cup-achievements-badge">Top 3</span>
+          </header>
+          <p id="cupPastAchievementsStatus" class="muted cup-past-achievements-status">
+            Buscando suas colocações anteriores…
+          </p>
+          <div id="cupPastAchievements" class="cup-past-achievements" aria-live="polite"></div>
+          <p class="cup-past-achievements-note">
+            Apenas colocações em 1º, 2º ou 3º aparecem aqui. Até ativarmos o fechamento mensal, resultados antigos acompanham os dados atuais do período.
+          </p>
+        </section>
+
+        <div class="stats-bottom-actions">
+          <button id="cupScrollTop" class="stats-scroll-top cup-scroll-top" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 10 6-6 6 6"/>
+              <path d="M12 4v16"/>
+            </svg>
+            <span>Subir ao topo</span>
+          </button>
+        </div>
       </section>
 
       <section id="statsPanel" class="stats-page hidden">
@@ -766,71 +933,6 @@
           </div>
         </section>
 
-        <section id="accountRankingCard" class="card block account-ranking-card rank-tier-common">
-          <header class="account-ranking-head">
-            <div>
-              <p class="eyebrow">Liga CLT</p>
-              <h2>Seu desempenho no ranking</h2>
-            </div>
-            <span id="accountRankingBadge" class="account-ranking-badge">CLT Comum</span>
-          </header>
-
-          <div class="account-ranking-grid">
-            <article>
-              <small>Posição no mês</small>
-              <strong id="accountRankPosition">—</strong>
-            </article>
-            <article>
-              <small>Título</small>
-              <strong id="accountRankTitle">Carregando…</strong>
-            </article>
-            <article>
-              <small>Pontos do mês</small>
-              <strong id="accountRankPoints">0</strong>
-            </article>
-          </div>
-
-          <p id="accountRankStatus" class="muted account-ranking-status">
-            Buscando sua colocação…
-          </p>
-
-          <button id="accountRankingParticipation" class="btn secondary account-ranking-action" type="button" disabled>
-            Não quero participar
-          </button>
-        </section>
-
-        <section class="card block monthly-points-statement-card">
-          <header class="monthly-points-statement-head">
-            <div>
-              <p class="eyebrow">Somente você consegue ver</p>
-              <h2>Extrato privado de pontos</h2>
-            </div>
-            <label class="monthly-points-month-field">
-              <span>Mês</span>
-              <input id="monthlyPointsMonth" type="month" />
-            </label>
-          </header>
-
-          <div class="monthly-points-total" aria-live="polite">
-            <span>Total do período</span>
-            <strong id="monthlyPointsTotal">0 pts</strong>
-          </div>
-
-          <p id="monthlyPointsStatus" class="muted monthly-points-status">
-            Abra esta área para carregar seu extrato.
-          </p>
-
-          <ol id="monthlyPointsStatement" class="monthly-points-statement-list" aria-live="polite"></ol>
-
-          <aside class="monthly-points-privacy-note">
-            <strong>Privado de verdade</strong>
-            <p>
-              Os demais participantes veem somente seu total mensal. Horários, almoço,
-              saldos, abonos e os motivos de cada lançamento aparecem apenas aqui.
-            </p>
-          </aside>
-        </section>
-
         <section class="card block public-avatar-settings-card">
           <header class="public-avatar-settings-head">
             <div>
@@ -842,7 +944,7 @@
 
           <p class="muted section-description">
             Escolha como você aparece para os outros participantes. Essa preferência altera
-            somente o ranking e a Copa; sua foto e seu mascote pessoais continuam iguais.
+            somente o ranking e a COPA CLT; sua foto e seu mascote pessoais continuam iguais.
           </p>
 
           <div id="publicAvatarOptions" class="public-avatar-options" aria-label="Escolha do avatar público">
@@ -1068,29 +1170,37 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.6.2</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.7</h2>
         </div>
-        <span class="release-pill">V2.6.2</span>
+        <span class="release-pill">V2.7</span>
       </header>
 
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">⏱️</span>
+        <span class="release-note-icon" aria-hidden="true">🏆</span>
         <div>
-          <strong>Hora extra agora pontua por hora inteira</strong>
+          <strong>Nova área COPA CLT</strong>
           <p>
-            Cada 1 hora completa de saldo positivo no dia rende 1 ponto.
-            Assim, 1h30 vale +1 ponto e 2h valem +2 pontos.
+            Desempenho pessoal, Top 3 atual, extrato privado e conquistas anteriores agora ficam reunidos em uma tela própria.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">🎯</span>
+        <span class="release-note-icon" aria-hidden="true">📜</span>
         <div>
-          <strong>A jornada ideal continua valendo mais</strong>
+          <strong>Extrato mais limpo</strong>
           <p>
-            Trabalhar entre 7h50 e 8h10 continua rendendo +4 pontos.
-            Minutos extras incompletos não geram frações de ponto.
+            O histórico de pontos ganhou seletor moderno de mês e área com rolagem, sem ocupar a tela inteira.
+          </p>
+        </div>
+      </section>
+
+      <section class="release-note">
+        <span class="release-note-icon" aria-hidden="true">🥇</span>
+        <div>
+          <strong>Conquistas de pódio</strong>
+          <p>
+            Colocações anteriores em 1º, 2º e 3º passam a aparecer como medalhas pessoais dentro da COPA CLT.
           </p>
         </div>
       </section>
@@ -1104,7 +1214,7 @@
       <header class="ranking-dialog-head">
         <div>
           <p class="eyebrow">Competição totalmente desnecessária</p>
-          <h2 id="rankingTitle">Temporada da Liga CLT</h2>
+          <h2 id="rankingTitle">Temporada da COPA CLT</h2>
           <span id="rankingDialogPeriod" class="ranking-period-label">Mês atual</span>
         </div>
         <span class="ranking-trophy" aria-hidden="true">🏆</span>
@@ -1126,7 +1236,7 @@
 
       <div class="ranking-dialog-actions ranking-dialog-actions-preview">
         <button id="openCupPreview" class="btn secondary cup-preview-launch" type="button">
-          Prévia da Copa
+          Prévia da COPA CLT
         </button>
         <button id="rankingDialogParticipation" class="btn secondary" type="button" disabled>
           Não quero participar
@@ -1145,14 +1255,14 @@
         <div class="cup-orbit cup-orbit-three" aria-hidden="true"></div>
 
         <header class="cup-result-topbar">
-          <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar prévia da Copa">
+          <button id="closeCupResultTop" class="cup-result-back" type="button" aria-label="Fechar prévia da COPA CLT">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <span class="cup-preview-pill">Prévia visual · pontos atuais</span>
         </header>
 
         <div class="cup-result-heading">
-          <p>Copa da Jornada</p>
+          <p>COPA CLT</p>
           <h2 id="cupResultTitle">Resultado da temporada</h2>
           <span id="cupResultPeriod">Julho de 2026</span>
         </div>
@@ -1164,13 +1274,13 @@
         <header class="cup-board-head">
           <div>
             <p class="eyebrow">Classificação final</p>
-            <h3 id="cupBoardTitle">Copa da Jornada</h3>
+            <h3 id="cupBoardTitle">COPA CLT</h3>
           </div>
           <span id="cupBoardPeriod">Julho de 2026</span>
         </header>
 
         <p class="cup-preview-note">
-          Esta versão serve apenas para testar o visual. Os pontos abaixo são simulados e ainda não alteram o ranking real.
+          Prévia visual com os pontos atuais da COPA CLT. O resultado mensal ainda não está fechado.
         </p>
 
         <ol id="cupResultList" class="cup-result-list" aria-live="polite"></ol>
@@ -1366,6 +1476,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.6.2-hora-extra-inteira"></script>
+  <script src="app.js?v=2.7-copa-clt-hub"></script>
 </body>
 </html>

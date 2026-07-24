@@ -1,5 +1,5 @@
-const CACHE="jornada-fb-google-cloud-v2-6-2-hora-extra-inteira";
-const FILES=["./","./index.html","./styles.css?v=2.6.2-hora-extra-inteira","./app.js?v=2.6.2-hora-extra-inteira","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.png","./mascot-pato.png","./mascot-coelha.png","./mascot-coruja.png"];
+const CACHE="jornada-fb-google-cloud-v2-7-copa-clt-hub";
+const FILES=["./","./index.html","./styles.css?v=2.7-copa-clt-hub","./app.js?v=2.7-copa-clt-hub","./config.js","./manifest.webmanifest","./icone-192.png","./icone-512.png","./icone-calculadora.svg","./apple-touch-icon.png","./mascot-panda.png","./mascot-pato.png","./mascot-coelha.png","./mascot-coruja.png"];
 
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)));

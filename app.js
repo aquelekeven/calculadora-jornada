@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.6.2";
+const APP_RELEASE_ID = "v2.7";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -332,6 +332,7 @@ const el = {
   tabRecord: $("tabRecord"),
   tabHistory: $("tabHistory"),
   tabAccount: $("tabAccount"),
+  cupButton: $("cupButton"),
   statsButton: $("statsButton"),
   achievementsButton: $("achievementsButton"),
   statsBackHome: $("statsBackHome"),
@@ -340,10 +341,19 @@ const el = {
   achievementsBackHome: $("achievementsBackHome"),
   achievementsScrollTop: $("achievementsScrollTop"),
   achievementsPageTop: $("achievementsPageTop"),
+  cupBackHome: $("cupBackHome"),
+  cupScrollTop: $("cupScrollTop"),
+  cupPageTop: $("cupPageTop"),
+  cupOpenFullRanking: $("cupOpenFullRanking"),
+  cupCurrentRankingStatus: $("cupCurrentRankingStatus"),
+  cupCurrentTop3: $("cupCurrentTop3"),
+  cupPastAchievementsStatus: $("cupPastAchievementsStatus"),
+  cupPastAchievements: $("cupPastAchievements"),
   mainNavigation: $("mainNavigation"),
   todayPanel: $("todayPanel"),
   recordPanel: $("recordPanel"),
   historyPanel: $("historyPanel"),
+  cupPanel: $("cupPanel"),
   statsPanel: $("statsPanel"),
   achievementsPanel: $("achievementsPanel"),
   accountPanel: $("accountPanel"),
@@ -512,6 +522,10 @@ let monthlyPointsStatementTotal = 0;
 let monthlyPointsStatementMonth = "";
 let monthlyPointsStatementLoading = false;
 let monthlyPointsStatementError = "";
+let cupPastAchievementsRows = [];
+let cupPastAchievementsLoading = false;
+let cupPastAchievementsError = "";
+let cupPastAchievementsSignature = "";
 
 function accounts() {
   return cloudAccountsCache;
@@ -1424,14 +1438,6 @@ function updateAccountInterface() {
   loadSalarySettings(user);
   renderPersonalRankingSummary();
   renderPublicAvatarSettings();
-
-  if (el.monthlyPointsMonth && !el.monthlyPointsMonth.value) {
-    el.monthlyPointsMonth.value = currentMonthKey();
-    el.monthlyPointsMonth.max = currentMonthKey();
-  }
-  loadMonthlyPointsStatement(el.monthlyPointsMonth?.value || currentMonthKey(), {
-    quiet: monthlyPointsStatementRows.length > 0
-  });
 }
 
 function selectMascot(mascotId) {
@@ -2811,6 +2817,44 @@ async function setPublicRankingAvatarMode(mode) {
 
 
 
+function availableMonthlyPointsMonths() {
+  const user = accounts()[currentUser];
+  const keys = new Set([currentMonthKey()]);
+
+  (user?.history || []).forEach((record) => {
+    const date = String(record?.date || "");
+    if (/^\d{4}-(0[1-9]|1[0-2])-/.test(date)) {
+      const key = date.slice(0, 7);
+      if (key <= currentMonthKey()) keys.add(key);
+    }
+  });
+
+  return [...keys].sort((a, b) => b.localeCompare(a)).slice(0, 36);
+}
+
+function populateMonthlyPointsMonthOptions(selectedMonth = currentMonthKey()) {
+  if (!el.monthlyPointsMonth) return;
+
+  const selected = /^\d{4}-(0[1-9]|1[0-2])$/.test(String(selectedMonth || ""))
+    ? String(selectedMonth)
+    : currentMonthKey();
+  const keys = availableMonthlyPointsMonths();
+
+  if (!keys.includes(selected)) keys.push(selected);
+  keys.sort((a, b) => b.localeCompare(a));
+
+  el.monthlyPointsMonth.innerHTML = keys
+    .map((key) => `<option value="${key}">${escapeRankingText(pointsMonthLabel(key))}</option>`)
+    .join("");
+  el.monthlyPointsMonth.value = selected;
+}
+
+function historicalCupMonthKeys() {
+  return availableMonthlyPointsMonths()
+    .filter((monthKey) => monthKey < currentMonthKey())
+    .slice(0, 24);
+}
+
 function pointsMonthLabel(monthKey) {
   const match = String(monthKey || "").match(/^(\d{4})-(\d{2})$/);
   if (!match) return "Mês atual";
@@ -2860,7 +2904,7 @@ function renderMonthlyPointsStatement() {
   }
 
   el.monthlyPointsStatus.classList.remove("error");
-  el.monthlyPointsStatus.textContent = `${pointsMonthLabel(monthKey)} · este detalhamento só aparece na sua conta.`;
+  el.monthlyPointsStatus.textContent = `${pointsMonthLabel(monthKey)} · este detalhamento só aparece na sua área da COPA CLT.`;
 
   if (!monthlyPointsStatementRows.length) {
     el.monthlyPointsStatement.innerHTML = '<li class="monthly-points-empty">Nenhum lançamento de pontos neste mês.</li>';
@@ -2895,10 +2939,7 @@ async function loadMonthlyPointsStatement(monthKey = currentMonthKey(), { quiet 
     : currentMonthKey();
 
   monthlyPointsStatementMonth = normalizedMonth;
-  if (el.monthlyPointsMonth) {
-    el.monthlyPointsMonth.value = normalizedMonth;
-    el.monthlyPointsMonth.max = currentMonthKey();
-  }
+  populateMonthlyPointsMonthOptions(normalizedMonth);
 
   if (!quiet) {
     monthlyPointsStatementLoading = true;
@@ -2991,6 +3032,166 @@ function rankingRowsForDock() {
 }
 
 
+function cupTopThreeRows() {
+  return medalRankingRows
+    .filter((row) => Number(row.position) >= 1 && Number(row.position) <= 3)
+    .slice(0, 3);
+}
+
+function cupTopThreeMarkup(row) {
+  const tier = rankTierForPosition(row.position);
+  const safeName = escapeRankingText(row.displayName);
+  const pointsLabel = row.points === 1 ? "ponto" : "pontos";
+
+  return `
+    <li class="cup-current-top3-row rank-tier-${tier.key} ${row.isCurrentUser ? "current-user" : ""}">
+      <span class="cup-current-top3-position">${row.position}</span>
+      ${publicRankingAvatarMarkup(row, "cup-current-top3-avatar")}
+      <span class="cup-current-top3-copy">
+        <strong>${safeName}</strong>
+        <small>${tier.icon} ${tier.title}</small>
+      </span>
+      <span class="cup-current-top3-points"><strong>${row.points}</strong><small>${pointsLabel}</small></span>
+    </li>
+  `;
+}
+
+function renderCupCurrentRankingSummary() {
+  if (!el.cupCurrentTop3 || !el.cupCurrentRankingStatus) return;
+
+  if (medalRankingLoading && !medalRankingRows.length) {
+    el.cupCurrentRankingStatus.textContent = "Carregando o pódio atual…";
+    el.cupCurrentTop3.innerHTML = '<li class="cup-current-top3-empty">Buscando colocações…</li>';
+    return;
+  }
+
+  if (medalRankingError) {
+    el.cupCurrentRankingStatus.textContent = medalRankingError;
+    el.cupCurrentTop3.innerHTML = '<li class="cup-current-top3-empty">O pódio ainda não pôde ser carregado.</li>';
+    return;
+  }
+
+  const rows = cupTopThreeRows();
+  el.cupCurrentRankingStatus.textContent = `${pointsMonthLabel(currentMonthKey())} · somente os pontos totais são públicos.`;
+  el.cupCurrentTop3.innerHTML = rows.length
+    ? rows.map(cupTopThreeMarkup).join("")
+    : '<li class="cup-current-top3-empty">Ainda não há participantes pontuando neste mês.</li>';
+}
+
+function renderCupPastAchievements() {
+  if (!el.cupPastAchievements || !el.cupPastAchievementsStatus) return;
+
+  if (cupPastAchievementsLoading) {
+    el.cupPastAchievementsStatus.textContent = "Buscando suas colocações anteriores…";
+    el.cupPastAchievements.innerHTML = '<div class="cup-past-achievements-empty">Consultando temporadas…</div>';
+    return;
+  }
+
+  if (cupPastAchievementsError) {
+    el.cupPastAchievementsStatus.textContent = cupPastAchievementsError;
+    el.cupPastAchievements.innerHTML = '<div class="cup-past-achievements-empty">Não foi possível carregar o histórico agora.</div>';
+    return;
+  }
+
+  el.cupPastAchievementsStatus.textContent = cupPastAchievementsRows.length
+    ? `${cupPastAchievementsRows.length} ${cupPastAchievementsRows.length === 1 ? "pódio conquistado" : "pódios conquistados"}`
+    : "Nenhuma colocação no Top 3 registrada até agora.";
+
+  if (!cupPastAchievementsRows.length) {
+    el.cupPastAchievements.innerHTML = `
+      <div class="cup-past-achievements-empty">
+        Quando você fechar uma temporada em 1º, 2º ou 3º, a medalha aparecerá aqui.
+      </div>
+    `;
+    return;
+  }
+
+  el.cupPastAchievements.innerHTML = cupPastAchievementsRows.map((row) => {
+    const tier = rankTierForPosition(row.position);
+    const pointsLabel = row.points === 1 ? "ponto" : "pontos";
+    return `
+      <article class="cup-past-medal rank-tier-${tier.key}">
+        <div class="cup-past-medal-icon" aria-hidden="true">
+          <span>${row.position}</span>
+          <i></i>
+        </div>
+        <div class="cup-past-medal-copy">
+          <strong>${tier.title}</strong>
+          <span>${escapeRankingText(pointsMonthLabel(row.monthKey))}</span>
+          <small>${row.points} ${pointsLabel}</small>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadCupPastAchievements({ force = false } = {}) {
+  if (!currentUser || !supabaseClient || !authSession) return;
+
+  const months = historicalCupMonthKeys();
+  const signature = `${currentUser}:${months.join(",")}`;
+
+  if (!force && cupPastAchievementsSignature === signature && !cupPastAchievementsError) {
+    renderCupPastAchievements();
+    return;
+  }
+
+  cupPastAchievementsSignature = signature;
+  cupPastAchievementsLoading = true;
+  cupPastAchievementsError = "";
+  renderCupPastAchievements();
+
+  if (!months.length) {
+    cupPastAchievementsRows = [];
+    cupPastAchievementsLoading = false;
+    renderCupPastAchievements();
+    return;
+  }
+
+  try {
+    const results = await Promise.all(months.map(async (monthKey) => {
+      const { data, error } = await supabaseClient.rpc("get_my_monthly_points_summary", {
+        p_month_key: monthKey
+      });
+      if (error) throw error;
+      const summary = Array.isArray(data) ? data[0] : data;
+      return {
+        monthKey,
+        position: Number(summary?.position) || null,
+        points: Math.round(Number(summary?.total_points) || 0),
+        eventCount: Math.round(Number(summary?.event_count) || 0)
+      };
+    }));
+
+    cupPastAchievementsRows = results
+      .filter((row) => row.eventCount > 0 && row.position >= 1 && row.position <= 3)
+      .sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+    cupPastAchievementsError = "";
+  } catch (error) {
+    console.error("Falha ao carregar conquistas anteriores da COPA CLT.", error);
+    cupPastAchievementsRows = [];
+    cupPastAchievementsError = navigator.onLine
+      ? "As conquistas anteriores estão temporariamente indisponíveis."
+      : "Sem conexão para consultar as temporadas anteriores.";
+  } finally {
+    cupPastAchievementsLoading = false;
+    renderCupPastAchievements();
+  }
+}
+
+function updateCupInterface() {
+  populateMonthlyPointsMonthOptions(monthlyPointsStatementMonth || currentMonthKey());
+  renderPersonalRankingSummary();
+  renderCupCurrentRankingSummary();
+  renderCupPastAchievements();
+
+  loadMedalRanking({ quiet: medalRankingRows.length > 0 });
+  loadMonthlyPointsStatement(el.monthlyPointsMonth?.value || currentMonthKey(), {
+    quiet: monthlyPointsStatementRows.length > 0
+  });
+  loadCupPastAchievements();
+}
+
 function rankingStatusText() {
   if (medalRankingLoading && !medalRankingRows.length) {
     return "Carregando temporada…";
@@ -3043,6 +3244,7 @@ function renderMedalRanking() {
     if (el.rankingDialogList) el.rankingDialogList.innerHTML = empty;
     renderPersonalRankingSummary();
     renderPublicAvatarSettings();
+    renderCupCurrentRankingSummary();
     return;
   }
 
@@ -3069,6 +3271,7 @@ function renderMedalRanking() {
 
   renderPersonalRankingSummary();
   renderPublicAvatarSettings();
+  renderCupCurrentRankingSummary();
 }
 
 
@@ -6978,10 +7181,11 @@ function showTab(which) {
   const todayIsOpen = which === "today";
   const recordIsOpen = which === "record";
   const historyIsOpen = which === "history";
+  const cupIsOpen = which === "cup";
   const statsIsOpen = which === "stats";
   const achievementsIsOpen = which === "achievements";
   const accountIsOpen = which === "account";
-  const specialPageIsOpen = statsIsOpen || achievementsIsOpen;
+  const specialPageIsOpen = cupIsOpen || statsIsOpen || achievementsIsOpen;
 
   if (!specialPageIsOpen) {
     lastAppPage = which;
@@ -6990,6 +7194,7 @@ function showTab(which) {
   el.todayPanel.classList.toggle("hidden", !todayIsOpen);
   el.recordPanel.classList.toggle("hidden", !recordIsOpen);
   el.historyPanel.classList.toggle("hidden", !historyIsOpen);
+  el.cupPanel.classList.toggle("hidden", !cupIsOpen);
   el.statsPanel.classList.toggle("hidden", !statsIsOpen);
   el.achievementsPanel.classList.toggle("hidden", !achievementsIsOpen);
   el.accountPanel.classList.toggle("hidden", !accountIsOpen);
@@ -6999,6 +7204,7 @@ function showTab(which) {
   el.tabRecord.classList.toggle("active", recordIsOpen);
   el.tabHistory.classList.toggle("active", historyIsOpen);
   el.tabAccount.classList.toggle("active", accountIsOpen);
+  el.cupButton.classList.toggle("active", cupIsOpen);
   el.statsButton.classList.toggle("active", statsIsOpen);
   el.achievementsButton.classList.toggle("active", achievementsIsOpen);
 
@@ -7006,8 +7212,15 @@ function showTab(which) {
   el.tabRecord.setAttribute("aria-current", recordIsOpen ? "page" : "false");
   el.tabHistory.setAttribute("aria-current", historyIsOpen ? "page" : "false");
   el.tabAccount.setAttribute("aria-pressed", accountIsOpen ? "true" : "false");
+  el.cupButton.setAttribute("aria-pressed", cupIsOpen ? "true" : "false");
   el.statsButton.setAttribute("aria-pressed", statsIsOpen ? "true" : "false");
   el.achievementsButton.setAttribute("aria-pressed", achievementsIsOpen ? "true" : "false");
+
+  el.cupButton.setAttribute(
+    "aria-label",
+    cupIsOpen ? "Voltar da COPA CLT" : "Abrir COPA CLT"
+  );
+  el.cupButton.title = cupIsOpen ? "Voltar" : "COPA CLT";
 
   el.statsButton.setAttribute(
     "aria-label",
@@ -7026,6 +7239,7 @@ function showTab(which) {
 
   if (recordIsOpen) calculateRecord();
   if (historyIsOpen) renderHistory();
+  if (cupIsOpen) updateCupInterface();
   if (statsIsOpen) renderStats();
   if (achievementsIsOpen) renderAchievements();
   if (accountIsOpen) updateAccountInterface();
@@ -7204,6 +7418,16 @@ el.tabHistory.onclick = () => {
   renderAchievements();
 };
 el.tabAccount.onclick = () => showTab("account");
+el.cupButton.onclick = () => {
+  const isActive = el.cupButton.classList.contains("active");
+
+  if (isActive) {
+    showTab(lastAppPage);
+    return;
+  }
+
+  showTab("cup");
+};
 el.statsButton.onclick = () => {
   const isActive = el.statsButton.classList.contains("active");
 
@@ -7231,6 +7455,17 @@ el.achievementsButton.onclick = () => {
   evaluateAchievements({ source: "Medalhas" });
   renderAchievements();
 };
+
+el.cupBackHome.onclick = () => {
+  showTab("today");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+el.cupScrollTop.onclick = () => {
+  el.cupPageTop.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
+el.cupOpenFullRanking.onclick = openRankingDialog;
 
 el.statsBackHome.onclick = () => {
   showTab("today");
