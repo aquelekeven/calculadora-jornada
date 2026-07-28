@@ -440,6 +440,7 @@ const el = {
   recordFeedbackIcon: $("recordFeedbackIcon"),
   recordFeedbackTitle: $("recordFeedbackTitle"),
   recordFeedbackMessage: $("recordFeedbackMessage"),
+  recordFeedbackClose: $("recordFeedbackClose"),
 
   calendarDialog: $("calendarDialog"),
   calendarTitle: $("calendarTitle"),
@@ -459,6 +460,12 @@ const el = {
   openDeleteAccount: $("openDeleteAccount"),
   deleteAccountDialog: $("deleteAccountDialog"),
   deleteAccountForm: $("deleteAccountForm"),
+  deleteHistoryDialog: $("deleteHistoryDialog"),
+  deleteHistoryForm: $("deleteHistoryForm"),
+  deleteHistoryDate: $("deleteHistoryDate"),
+  deleteHistoryDetails: $("deleteHistoryDetails"),
+  cancelDeleteHistory: $("cancelDeleteHistory"),
+  confirmDeleteHistory: $("confirmDeleteHistory"),
   deleteAccountCode: $("deleteAccountCode"),
   deleteAccountConfirm: $("deleteAccountConfirm"),
   deleteAccountError: $("deleteAccountError"),
@@ -485,6 +492,7 @@ let achievementCategoryFilter = "all";
 let lastAppPage = "today";
 let toastTimer = null;
 let recordFeedbackTimer = null;
+let pendingHistoryDeleteId = null;
 let recordFieldAttentionTimer = null;
 let calendarCursor = new Date();
 let noteTargetId = null;
@@ -999,12 +1007,38 @@ function highlightRecordField(target) {
   }, 3000);
 }
 
+function finishRecordFeedbackClose() {
+  if (!el.recordFeedback) return;
+  clearTimeout(recordFeedbackTimer);
+  el.recordFeedback.classList.add("hidden");
+  el.recordFeedback.classList.remove(
+    "success",
+    "error",
+    "animate",
+    "is-closing",
+    "quick-close"
+  );
+}
+
+function closeRecordFeedback({ quick = false } = {}) {
+  if (!el.recordFeedback || el.recordFeedback.classList.contains("hidden")) return;
+
+  clearTimeout(recordFeedbackTimer);
+  el.recordFeedback.classList.remove("animate");
+  el.recordFeedback.classList.add("is-closing");
+  el.recordFeedback.classList.toggle("quick-close", quick);
+
+  recordFeedbackTimer = window.setTimeout(
+    finishRecordFeedbackClose,
+    quick ? 210 : 2500
+  );
+}
+
 function showRecordFeedback(type, title, message, target = null) {
   if (!el.recordFeedback) return;
 
   clearTimeout(recordFeedbackTimer);
-  el.recordFeedback.classList.add("hidden");
-  el.recordFeedback.classList.remove("success", "error", "animate");
+  finishRecordFeedbackClose();
 
   el.recordFeedbackTitle.textContent = title;
   el.recordFeedbackMessage.textContent = message;
@@ -1022,10 +1056,11 @@ function showRecordFeedback(type, title, message, target = null) {
     clearRecordFieldAttention();
   }
 
-  recordFeedbackTimer = window.setTimeout(() => {
-    el.recordFeedback.classList.add("hidden");
-    el.recordFeedback.classList.remove("animate", "success", "error");
-  }, type === "error" ? 3200 : 2300);
+  // Mantém a mensagem legível e depois inicia um fade longo e gradual.
+  recordFeedbackTimer = window.setTimeout(
+    () => closeRecordFeedback(),
+    type === "error" ? 2100 : 1600
+  );
 }
 
 function recordSaveIssue() {
@@ -5074,19 +5109,64 @@ function renderHistory() {
     });
 }
 
-function deleteHistory(id) {
-  if (!confirm("Excluir este registro?")) return;
+function openDeleteHistoryDialog(id) {
+  const user = accounts()[currentUser];
+  const record = (user?.history || []).find((item) => item.id === id);
+  if (!record || !el.deleteHistoryDialog) {
+    showRecordFeedback("error", "Registro não encontrado", "Atualize a página e tente novamente.");
+    return;
+  }
 
+  pendingHistoryDeleteId = id;
+  el.deleteHistoryDate.textContent = dateBR(record.date);
+
+  if (record.kind === "work") {
+    const totalLabel = Number.isFinite(Number(record.total))
+      ? `${duration(Number(record.total))} trabalhadas`
+      : "Jornada registrada";
+    el.deleteHistoryDetails.textContent = totalLabel;
+  } else {
+    el.deleteHistoryDetails.textContent = DAY_STATUS[record.kind]?.label || "Registro do dia";
+  }
+
+  el.deleteHistoryDialog.showModal();
+}
+
+function closeDeleteHistoryDialog() {
+  if (el.deleteHistoryDialog?.open) el.deleteHistoryDialog.close();
+  pendingHistoryDeleteId = null;
+}
+
+function confirmDeleteHistory(event) {
+  event.preventDefault();
+
+  const id = pendingHistoryDeleteId;
   const allAccounts = accounts();
   const user = allAccounts[currentUser];
+  const record = (user?.history || []).find((item) => item.id === id);
 
-  user.history = (user.history || []).filter(
-    (record) => record.id !== id
-  );
+  if (!id || !user || !record) {
+    closeDeleteHistoryDialog();
+    showRecordFeedback("error", "Registro não encontrado", "Atualize a página e tente novamente.");
+    return;
+  }
 
+  user.history = (user.history || []).filter((item) => item.id !== id);
   allAccounts[currentUser] = user;
   saveAccounts(allAccounts);
   renderHistory();
+
+  const removedDate = dateBR(record.date);
+  closeDeleteHistoryDialog();
+  showRecordFeedback(
+    "success",
+    "Registro excluído",
+    `${removedDate} foi removido do histórico.`
+  );
+}
+
+function deleteHistory(id) {
+  openDeleteHistoryDialog(id);
 }
 
 
@@ -7948,6 +8028,20 @@ el.exportBackup.onclick = exportBackup;
 el.openDeleteAccount.onclick = openDeleteAccountDialog;
 el.cancelDeleteAccount.onclick = closeDeleteAccountDialog;
 el.deleteAccountForm.addEventListener("submit", deleteCurrentAccount);
+
+el.recordFeedbackClose?.addEventListener("click", () => {
+  closeRecordFeedback({ quick: true });
+});
+
+el.cancelDeleteHistory?.addEventListener("click", closeDeleteHistoryDialog);
+el.deleteHistoryForm?.addEventListener("submit", confirmDeleteHistory);
+el.deleteHistoryDialog?.addEventListener("click", (event) => {
+  if (event.target === el.deleteHistoryDialog) closeDeleteHistoryDialog();
+});
+el.deleteHistoryDialog?.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  closeDeleteHistoryDialog();
+});
 
 el.deleteAccountDialog.addEventListener("click", (event) => {
   if (event.target === el.deleteAccountDialog) {

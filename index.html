@@ -15,7 +15,7 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.11-feedback-registro" />
+  <link rel="stylesheet" href="styles.css?v=2.7.12-feedback-e-exclusao" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -27,6 +27,7 @@
         <strong id="recordFeedbackTitle">Registro concluído</strong>
         <p id="recordFeedbackMessage">O dia foi salvo no histórico.</p>
       </div>
+      <button id="recordFeedbackClose" class="record-feedback-close" type="button" aria-label="Fechar mensagem">×</button>
     </div>
   </div>
 
@@ -1158,26 +1159,26 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.10</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.12</h2>
         </div>
-        <span class="release-pill">V2.7.10</span>
+        <span class="release-pill">V2.7.12</span>
       </header>
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">🐾</span>
+        <span class="release-note-icon" aria-hidden="true">✓</span>
         <div>
-          <strong>Seleção de mascotes corrigida</strong>
+          <strong>Mensagens com saída suave</strong>
           <p>
-            A raposa agora permanece selecionada corretamente e não troca mais para o pato.
+            As confirmações e os avisos agora desaparecem gradualmente. O botão × fecha a mensagem quase na hora, mantendo um fade rápido.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">◐</span>
+        <span class="release-note-icon" aria-hidden="true">🗑</span>
         <div>
-          <strong>Resultado mensal real</strong>
+          <strong>Exclusão no padrão do aplicativo</strong>
           <p>
-            O teste de pódio e os participantes fictícios foram removidos. O resultado aparece após o fechamento do mês com os dados reais da COPA CLT.
+            A confirmação para remover um registro do histórico agora aparece no centro da tela, com data, resumo e botões próprios.
           </p>
         </div>
       </section>
@@ -1364,6 +1365,36 @@
       </footer>
     </div>
   </dialog>
+  <dialog id="deleteHistoryDialog" class="feature-dialog delete-history-dialog" aria-labelledby="deleteHistoryTitle">
+    <form id="deleteHistoryForm" class="dialog-body">
+      <div class="delete-history-heading">
+        <span class="delete-history-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4 7h16M9 7V4h6v3M7.5 7l.7 12h7.6l.7-12M10 10.5v5M14 10.5v5"/>
+          </svg>
+        </span>
+        <div>
+          <p class="eyebrow danger-text">Excluir registro</p>
+          <h2 id="deleteHistoryTitle">Remover este dia do histórico?</h2>
+        </div>
+      </div>
+
+      <p class="muted delete-history-copy">
+        Essa ação remove o registro e recalcula os totais do mês. Ela não pode ser desfeita.
+      </p>
+
+      <div class="delete-history-summary">
+        <span id="deleteHistoryDate">—</span>
+        <strong id="deleteHistoryDetails">—</strong>
+      </div>
+
+      <div class="dialog-actions delete-history-actions">
+        <button id="cancelDeleteHistory" class="btn secondary" type="button">Cancelar</button>
+        <button id="confirmDeleteHistory" class="btn danger" type="submit">Excluir registro</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="deleteAccountDialog" aria-labelledby="deleteAccountTitle">
     <form id="deleteAccountForm" class="dialog-body">
       <div class="danger-icon" aria-hidden="true">!</div>
@@ -1442,6 +1473,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.11-feedback-registro"></script>
+  <script src="app.js?v=2.7.12-feedback-e-exclusao"></script>
 </body>
 </html>
