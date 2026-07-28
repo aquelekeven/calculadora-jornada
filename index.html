@@ -2,20 +2,16 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; upgrade-insecure-requests" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta id="themeColor" name="theme-color" content="#f5f5f7" />
   <title>Calculadora de Jornada FB</title>
   <link id="appFavicon" rel="icon" href="icone-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <script>
-    (() => {
-      const saved = localStorage.getItem("jfb_theme_v1");
-      const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      document.documentElement.dataset.theme = saved || preferred;
-    })();
-  </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.12-feedback-e-exclusao" />
+  <script src="theme-bootstrap.js"></script>
+  <link rel="stylesheet" href="styles.css?v=2.8-seguranca-login-global" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -71,7 +67,8 @@
           </p>
         </div>
 
-        <button id="googleLogin" class="google-login-button" type="button">
+        <div id="googleLogin" class="google-login-host" aria-label="Continuar com Google"></div>
+        <button id="googleLoginFallback" class="google-login-button hidden" type="button">
           <span class="google-login-mark" aria-hidden="true">G</span>
           <span>Continuar com Google</span>
         </button>
@@ -80,6 +77,9 @@
           <span class="auth-spinner" aria-hidden="true"></span>
           <span id="authLoadingText">Verificando sua sessão…</span>
         </div>
+        <p class="security-note">
+          O Google confirma sua identidade e o Supabase cria a sessão do aplicativo. Sua senha do Google nunca é recebida ou armazenada aqui.
+        </p>
 
         <p id="authConfigWarning" class="status error auth-config-warning hidden"></p>
 
@@ -1138,6 +1138,7 @@
             <button id="openDeleteAccount" class="btn danger" type="button">Apagar conta</button>
           </div>
           <p class="hint">
+            O backup é um arquivo legível e pode conter horários, observações e configurações financeiras. Guarde-o em local privado.
             Apagar a conta remove definitivamente os dados deste aplicativo. Sua conta Google não será apagada.
           </p>
         </section>
@@ -1159,26 +1160,36 @@
       <header class="updates-dialog-head">
         <div>
           <p class="eyebrow">Últimas novidades</p>
-          <h2 id="updatesTitle">Calculadora de Jornada · V2.7.12</h2>
+          <h2 id="updatesTitle">Calculadora de Jornada · V2.8</h2>
         </div>
-        <span class="release-pill">V2.7.12</span>
+        <span class="release-pill">V2.8</span>
       </header>
       <section class="release-note featured">
-        <span class="release-note-icon" aria-hidden="true">✓</span>
+        <span class="release-note-icon" aria-hidden="true">🛡</span>
         <div>
-          <strong>Mensagens com saída suave</strong>
+          <strong>Pacote de segurança</strong>
           <p>
-            As confirmações e os avisos agora desaparecem gradualmente. O botão × fecha a mensagem quase na hora, mantendo um fade rápido.
+            Cache privado bloqueado, importação de backup validada, logout reforçado e novas proteções no navegador e no banco.
           </p>
         </div>
       </section>
 
       <section class="release-note">
-        <span class="release-note-icon" aria-hidden="true">🗑</span>
+        <span class="release-note-icon" aria-hidden="true">G</span>
         <div>
-          <strong>Exclusão no padrão do aplicativo</strong>
+          <strong>Novo login com Google</strong>
           <p>
-            A confirmação para remover um registro do histórico agora aparece no centro da tela, com data, resumo e botões próprios.
+            O aplicativo agora aceita o botão oficial do Google e envia o token diretamente ao Supabase, evitando a tela intermediária com o código do projeto.
+          </p>
+        </div>
+      </section>
+
+      <section class="release-note">
+        <span class="release-note-icon" aria-hidden="true">!</span>
+        <div>
+          <strong>Erros no mesmo padrão</strong>
+          <p>
+            Falhas em outras telas também usam o aviso central vermelho, sem criar componentes pesados ou duplicados.
           </p>
         </div>
       </section>
@@ -1465,6 +1476,11 @@
         O usuário é responsável por conferir horários, regras internas e valores oficiais. O
         aplicativo pode sofrer alterações e não oferece garantia de disponibilidade contínua.
       </p>
+      <p>
+        A participação na <strong>COPA CLT</strong> é automática. Ficam públicos somente o primeiro
+        nome, a inicial do sobrenome, o avatar escolhido e a pontuação mensal. A pessoa pode sair
+        da competição ou trocar o avatar público a qualquer momento em <strong>Minha conta</strong>.
+      </p>
       <button class="btn primary closeTermsNotice" type="button">Entendi</button>
     </div>
   </dialog>
@@ -1472,7 +1488,8 @@
   <input id="backupInput" class="hidden" type="file" accept=".json,application/json" />
 
   <script src="config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.12-feedback-e-exclusao"></script>
+  <script src="https://accounts.google.com/gsi/client?hl=pt-BR"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2.81.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
+  <script src="app.js?v=2.8-seguranca-login-global"></script>
 </body>
 </html>

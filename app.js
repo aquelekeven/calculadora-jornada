@@ -3,7 +3,7 @@ const SUPABASE_TABLE = "user_data";
 const THEME = "jfb_theme_v1";
 const JOURNEY = 480;
 const TOLERANCE = 10;
-const APP_RELEASE_ID = "v2.7.10";
+const APP_RELEASE_ID = "v2.8";
 
 
 const MATH_BURST_SYMBOLS = [
@@ -142,7 +142,7 @@ const MASCOT_IDS = Object.keys(MASCOTS);
 
 function mascotMarkup(id) {
   const mascot = MASCOTS[id] || MASCOTS[DEFAULT_MASCOT];
-  return `<img src="${mascot.image}" alt="" class="mascot-image" loading="eager" decoding="async" />`;
+  return `<img src="${mascot.image}" alt="" class="mascot-image" loading="lazy" decoding="async" />`;
 }
 
 function ensureMascot(user) {
@@ -206,6 +206,7 @@ const el = {
   appView: $("appView"),
   authTabs: $("authTabs"),
   googleLogin: $("googleLogin"),
+  googleLoginFallback: $("googleLoginFallback"),
   authLoading: $("authLoading"),
   authLoadingText: $("authLoadingText"),
   authConfigWarning: $("authConfigWarning"),
@@ -481,7 +482,10 @@ let cloudSaveChain = Promise.resolve();
 let cloudSavePending = false;
 let cloudSessionUserId = null;
 let cloudOfflineMode = false;
+let lastSyncErrorAt = 0;
 let authTransitionId = 0;
+let googleIdentityInitialized = false;
+let googleLoginResizeTimer = null;
 let lastRecord = null;
 let installPrompt = null;
 let historyMonthKey = null;
@@ -554,17 +558,26 @@ function cloudConfig() {
   const config = window.JFB_CONFIG || {};
   const url = String(config.supabaseUrl || "").trim();
   const key = String(config.supabasePublishableKey || "").trim();
+  const googleClientId = String(config.googleClientId || "").trim();
   const placeholder = /COLE_AQUI|SEU_|YOUR_|EXEMPLO/i;
+  const ready = Boolean(
+    url &&
+    key &&
+    !placeholder.test(url) &&
+    !placeholder.test(key)
+  );
+  const googleReady = Boolean(
+    googleClientId &&
+    !placeholder.test(googleClientId) &&
+    /\.apps\.googleusercontent\.com$/i.test(googleClientId)
+  );
 
   return {
     url,
     key,
-    ready: Boolean(
-      url &&
-      key &&
-      !placeholder.test(url) &&
-      !placeholder.test(key)
-    )
+    googleClientId,
+    ready,
+    googleReady
   };
 }
 
@@ -574,9 +587,11 @@ function setAuthLoading(active, message = "Verificando sua sessão…") {
   }
 
   el.authLoading?.classList.toggle("hidden", !active);
+  el.googleLogin?.classList.toggle("is-disabled", active || !cloudConfig().ready);
+  el.googleLogin?.setAttribute("aria-busy", active ? "true" : "false");
 
-  if (el.googleLogin) {
-    el.googleLogin.disabled = active || !cloudConfig().ready;
+  if (el.googleLoginFallback) {
+    el.googleLoginFallback.disabled = active || !cloudConfig().ready;
   }
 }
 
@@ -734,6 +749,17 @@ function persistCurrentUserNow() {
     })
     .catch((error) => {
       console.error("Falha ao sincronizar os dados.", error);
+      const now = Date.now();
+      if (now - lastSyncErrorAt > 15000) {
+        lastSyncErrorAt = now;
+        showRecordFeedback(
+          "error",
+          "Não foi possível sincronizar",
+          navigator.onLine
+            ? friendlyCloudError(error, "Seus dados continuam salvos neste dispositivo e serão enviados na próxima tentativa.")
+            : "Você está sem conexão. Seus dados ficam neste dispositivo até a internet voltar."
+        );
+      }
     });
 
   return cloudSaveChain;
@@ -791,7 +817,81 @@ async function loadCloudAccount(session) {
   }
 }
 
-async function signInWithGoogle() {
+function googleLoginWidth() {
+  const available = Math.floor(el.googleLogin?.getBoundingClientRect().width || 360);
+  return Math.max(240, Math.min(400, available));
+}
+
+function renderGoogleLoginButton() {
+  const config = cloudConfig();
+
+  if (!el.googleLogin || !config.googleReady || !window.google?.accounts?.id) {
+    return false;
+  }
+
+  if (!googleIdentityInitialized) {
+    window.google.accounts.id.initialize({
+      client_id: config.googleClientId,
+      callback: handleGoogleCredential,
+      ux_mode: "popup",
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      context: "signin",
+      itp_support: true,
+      use_fedcm_for_prompt: true
+    });
+    googleIdentityInitialized = true;
+  }
+
+  el.googleLogin.innerHTML = "";
+  window.google.accounts.id.renderButton(el.googleLogin, {
+    type: "standard",
+    theme: "outline",
+    size: "large",
+    text: "continue_with",
+    shape: "pill",
+    logo_alignment: "left",
+    width: googleLoginWidth(),
+    locale: "pt-BR"
+  });
+
+  el.googleLogin.classList.remove("hidden");
+  el.googleLoginFallback?.classList.add("hidden");
+  return true;
+}
+
+async function handleGoogleCredential(response) {
+  const token = String(response?.credential || "").trim();
+
+  if (!token || !supabaseClient) {
+    setAuthLoading(false);
+    showRecordFeedback(
+      "error",
+      "Login não concluído",
+      "O Google não devolveu uma credencial válida. Tente novamente."
+    );
+    return;
+  }
+
+  setAuthLoading(true, "Validando sua conta…");
+
+  const { error } = await supabaseClient.auth.signInWithIdToken({
+    provider: "google",
+    token
+  });
+
+  if (error) {
+    console.error("Falha no login por ID token.", error);
+    setAuthLoading(false);
+    showRecordFeedback(
+      "error",
+      "Não foi possível entrar",
+      friendlyCloudError(error, "Confira sua conexão e tente novamente.")
+    );
+  }
+}
+
+async function signInWithGoogleLegacy() {
   if (!supabaseClient) {
     return toast("A integração com o Google ainda não foi configurada.", "error");
   }
@@ -809,9 +909,57 @@ async function signInWithGoogle() {
   });
 
   if (error) {
+    console.error("Falha ao abrir o OAuth do Google.", error);
     setAuthLoading(false);
-    toast(`Não foi possível abrir o Google: ${error.message}`, "error");
+    toast("Não foi possível abrir o Google. Tente novamente.", "error");
   }
+}
+
+function supabaseProjectRef() {
+  try {
+    return new URL(cloudConfig().url).hostname.split(".")[0] || "";
+  } catch {
+    return "";
+  }
+}
+
+async function clearPrivateBrowserData() {
+  const projectRef = supabaseProjectRef();
+
+  try {
+    localStorage.removeItem(STORE);
+    if (projectRef) {
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith(`sb-${projectRef}-`))
+        .forEach((key) => localStorage.removeItem(key));
+    }
+  } catch (error) {
+    console.warn("Não foi possível limpar todo o armazenamento local.", error);
+  }
+
+  try {
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith("jfb_") || (projectRef && key.startsWith(`sb-${projectRef}-`)))
+      .forEach((key) => sessionStorage.removeItem(key));
+  } catch {
+    // O armazenamento de sessão é apenas auxiliar.
+  }
+
+  try {
+    if ("caches" in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter((name) => name.startsWith("jornada-fb-"))
+          .map((name) => caches.delete(name))
+      );
+    }
+  } catch (error) {
+    console.warn("Não foi possível limpar o cache do aplicativo.", error);
+  }
+
+  navigator.serviceWorker?.controller?.postMessage({ type: "CLEAR_RUNTIME_DATA" });
+  window.google?.accounts?.id?.disableAutoSelect?.();
 }
 
 function resetCloudInterface() {
@@ -906,16 +1054,20 @@ async function initializeCloudAuth() {
   const config = cloudConfig();
 
   if (!config.ready) {
-    el.googleLogin.disabled = true;
+    el.googleLogin?.classList.add("hidden");
+    el.googleLoginFallback?.classList.remove("hidden");
+    el.googleLoginFallback.disabled = true;
     el.authConfigWarning.textContent =
-      "Integração ainda não configurada. Preencha o arquivo config.js e execute o supabase-setup.sql.";
+      "Integração ainda não configurada. Preencha o arquivo config.js e execute os SQLs do Supabase.";
     el.authConfigWarning.classList.remove("hidden");
     setAuthLoading(false);
     return;
   }
 
   if (!window.supabase?.createClient) {
-    el.googleLogin.disabled = true;
+    el.googleLogin?.classList.add("hidden");
+    el.googleLoginFallback?.classList.remove("hidden");
+    el.googleLoginFallback.disabled = true;
     el.authConfigWarning.textContent =
       "Não foi possível carregar a biblioteca de autenticação. Verifique sua conexão e recarregue a página.";
     el.authConfigWarning.classList.remove("hidden");
@@ -928,12 +1080,27 @@ async function initializeCloudAuth() {
       autoRefreshToken: true,
       detectSessionInUrl: true,
       flowType: "pkce"
+    },
+    global: {
+      headers: {
+        "x-application-name": "calculadora-jornada-v2.8"
+      }
     }
   });
 
   el.authConfigWarning.classList.add("hidden");
-  el.googleLogin.disabled = false;
   setAuthLoading(true);
+
+  if (config.googleReady && window.google?.accounts?.id) {
+    renderGoogleLoginButton();
+  } else {
+    el.googleLogin?.classList.add("hidden");
+    el.googleLoginFallback?.classList.remove("hidden");
+    el.authConfigWarning.textContent = config.googleReady
+      ? "O botão seguro do Google ainda não carregou. Recarregue a página ou use o modo de compatibilidade."
+      : "Adicione googleClientId ao config.js para ativar o novo login Google sem a tela intermediária do Supabase.";
+    el.authConfigWarning.classList.remove("hidden");
+  }
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     window.setTimeout(() => handleCloudSession(session), 0);
@@ -942,9 +1109,12 @@ async function initializeCloudAuth() {
   const { data, error } = await supabaseClient.auth.getSession();
 
   if (error) {
+    console.error("Falha ao verificar a sessão.", error);
     setAuthLoading(false);
-    el.authConfigWarning.textContent =
-      `Não foi possível verificar sua sessão: ${error.message}`;
+    el.authConfigWarning.textContent = friendlyCloudError(
+      error,
+      "Não foi possível verificar sua sessão. Recarregue a página."
+    );
     el.authConfigWarning.classList.remove("hidden");
     return;
   }
@@ -963,14 +1133,46 @@ function displayName(user) {
     .trim() || "Usuário";
 }
 
+function friendlyCloudError(error, fallback = "Não foi possível concluir a operação.") {
+  const raw = String(error?.message || error || "").trim();
+  const normalized = raw.toLowerCase();
+
+  if (!raw) return fallback;
+  if (/failed to fetch|network|load failed|fetch failed|offline/.test(normalized)) {
+    return "Não foi possível acessar o servidor. Confira sua internet e tente novamente.";
+  }
+  if (/jwt|token|session|refresh_token|not authenticated|usuário não autenticado/.test(normalized)) {
+    return "Sua sessão expirou ou ficou inválida. Saia e entre novamente com o Google.";
+  }
+  if (/row level security|permission|forbidden|not allowed|42501/.test(normalized)) {
+    return "Sua conta não tem permissão para concluir essa ação. Atualize a página e tente novamente.";
+  }
+  if (/duplicate|unique constraint/.test(normalized)) {
+    return "Já existe um registro com essas informações.";
+  }
+  if (/timeout|timed out/.test(normalized)) {
+    return "O servidor demorou demais para responder. Aguarde alguns segundos e tente novamente.";
+  }
+  if (/syntax|stack|postgres|relation |column |function |rpc|schema|supabase|^[a-z0-9_]+:/.test(normalized)) {
+    return fallback;
+  }
+
+  return raw.length <= 180 ? raw : fallback;
+}
+
 function toast(message, type = "ok") {
+  if (type === "error") {
+    showRecordFeedback(
+      "error",
+      "Não foi possível concluir",
+      friendlyCloudError(message, "Ocorreu um erro inesperado. Tente novamente.")
+    );
+    return;
+  }
+
   clearTimeout(toastTimer);
   el.toast.textContent = message;
   el.toast.classList.remove("hidden", "error");
-
-  if (type === "error") {
-    el.toast.classList.add("error");
-  }
 
   toastTimer = setTimeout(() => {
     el.toast.classList.add("hidden");
@@ -1036,6 +1238,7 @@ function closeRecordFeedback({ quick = false } = {}) {
 
 function showRecordFeedback(type, title, message, target = null) {
   if (!el.recordFeedback) return;
+  el.recordFeedback.classList.add("global-feedback");
 
   clearTimeout(recordFeedbackTimer);
   finishRecordFeedbackClose();
@@ -1726,17 +1929,20 @@ async function logout() {
   await persistCurrentUserNow();
 
   if (supabaseClient) {
-    const { error } = await supabaseClient.auth.signOut();
+    const { error } = await supabaseClient.auth.signOut({ scope: "local" });
 
     if (error) {
-      toast(`Não foi possível sair: ${error.message}`, "error");
+      console.error("Falha ao sair.", error);
+      toast("Não foi possível encerrar sua sessão. Tente novamente.", "error");
       setSyncState("error");
       return;
     }
   }
 
+  await clearPrivateBrowserData();
   resetCloudInterface();
   setAuthLoading(false);
+  renderGoogleLoginButton();
 }
 
 function download(name, text, type = "text/plain;charset=utf-8") {
@@ -1999,6 +2205,27 @@ function calculateToday() {
     `Você trabalhou ${duration(totalWorked)} e a diferença apurada foi de ${duration(rawBalance, true)}. ` +
     `Como está dentro do limite de 10 minutos, o saldo considerado é zero.`;
 }
+function todayErrorTarget(message) {
+  const text = String(message || "").toLowerCase();
+  if (text.includes("saída real")) return el.todayRealExit;
+  if (text.includes("volta do almoço")) return el.todayLunchBack;
+  if (text.includes("saída para almoço")) return el.todayLunchOut;
+  return el.todayEntry;
+}
+
+function calculateTodayWithFeedback() {
+  calculateToday();
+  const message = String(el.todayError?.textContent || "").trim();
+  if (!message || el.todayError?.classList.contains("hidden")) return;
+
+  showRecordFeedback(
+    "error",
+    "Confira os horários",
+    message,
+    todayErrorTarget(message)
+  );
+}
+
 function extractToday() {
   const parsed = parsePastedText(el.todayPastedText.value);
 
@@ -2837,7 +3064,9 @@ function safePublicAvatarUrl(value) {
 
   try {
     const url = new URL(rawValue);
-    return url.protocol === "https:" ? url.href : "";
+    const host = url.hostname.toLowerCase();
+    const googleHost = host === "lh3.googleusercontent.com" || host.endsWith(".googleusercontent.com");
+    return url.protocol === "https:" && googleHost ? url.href : "";
   } catch {
     return "";
   }
@@ -2880,7 +3109,7 @@ function publicRankingAvatarMarkup(row, extraClass = "") {
           loading="lazy"
           decoding="async"
           referrerpolicy="no-referrer"
-          onerror="this.hidden=true;this.parentElement.classList.add('avatar-load-failed')"
+          class="public-google-avatar-image"
         />
       </span>
     `;
@@ -2924,7 +3153,7 @@ function profileAvatarMarkup(user) {
 
   if (mode === "google" && googleUrl) {
     const safeUrl = escapeRankingText(googleUrl);
-    return `<img src="${safeUrl}" alt="" class="profile-google-image" loading="eager" decoding="async" referrerpolicy="no-referrer" />`;
+    return `<img src="${safeUrl}" alt="" class="profile-google-image" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`;
   }
 
   return mascotMarkup(ensureMascot(user));
@@ -4293,7 +4522,7 @@ function noteButtonHtml(item) {
   return `
     <button
       class="calendar-note ${hasNote ? "active" : ""} tooltip-target"
-      data-id="${item.id}"
+      data-id="${escapeRankingText(item.id)}"
       data-tooltip="${label}."
       type="button"
       aria-label="${label}"
@@ -4317,7 +4546,7 @@ function negativeExcuseButtonHtml(item) {
   return `
     <button
       class="work-negative-excuse ${excused ? "active" : ""}"
-      data-id="${item.id}"
+      data-id="${escapeRankingText(item.id)}"
       type="button"
       aria-label="${excused ? "Editar" : "Adicionar"} abono de horas negativas"
     >
@@ -4402,7 +4631,7 @@ function calendarWorkCell(item) {
         ${noteButtonHtml(item)}
         <button
           class="calendar-delete tooltip-target"
-          data-id="${item.id}"
+          data-id="${escapeRankingText(item.id)}"
           data-tooltip="Excluir esse registro."
           type="button"
           aria-label="Excluir esse registro"
@@ -4438,7 +4667,7 @@ function calendarStatusCell(item) {
     ? `
       <button
         class="absence-excuse ${absenceExcused ? "active" : ""}"
-        data-id="${item.id}"
+        data-id="${escapeRankingText(item.id)}"
         type="button"
       >
         ${absenceExcused
@@ -4485,7 +4714,7 @@ function calendarStatusCell(item) {
           ${noteButtonHtml(item)}
           <button
             class="calendar-delete tooltip-target"
-            data-id="${item.id}"
+            data-id="${escapeRankingText(item.id)}"
             data-tooltip="Excluir esse registro."
             type="button"
             aria-label="Excluir esse registro"
@@ -5219,8 +5448,10 @@ async function deleteCurrentAccount(event) {
     }
 
     el.deleteAccountDialog.close();
+    await clearPrivateBrowserData();
     resetCloudInterface();
     setAuthLoading(false);
+    renderGoogleLoginButton();
     toast("Conta e dados apagados definitivamente.");
   } catch (error) {
     console.error(error);
@@ -5234,6 +5465,9 @@ async function deleteCurrentAccount(event) {
   }
 }
 
+const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
+const MAX_BACKUP_HISTORY = 1500;
+
 function backupFileLabel(user) {
   return String(user?.email || "conta-google")
     .split("@")[0]
@@ -5244,9 +5478,15 @@ function backupFileLabel(user) {
 function exportBackup() {
   const user = accounts()[currentUser];
 
+  const proceed = window.confirm(
+    "O backup contém seus horários, observações, preferências e configurações financeiras em texto legível. Guarde o arquivo em local privado. Continuar?"
+  );
+
+  if (!proceed) return;
+
   const payload = {
     app: "Calculadora de Jornada FB",
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     account: user
   };
@@ -5258,43 +5498,301 @@ function exportBackup() {
   );
 }
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function sanitizeBackupText(value, maxLength = 200) {
+  return String(value ?? "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/[<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function validBackupDate(value) {
+  const text = String(value || "");
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(year, month - 1, day);
+
+  return (
+    year >= 2000 &&
+    text <= today() &&
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day
+  );
+}
+
+function validBackupTime(value) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || ""));
+}
+
+function backupUuid() {
+  return crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function sanitizeImportedRecord(record, index, seenDates) {
+  if (!isPlainObject(record)) {
+    throw new Error(`O registro ${index + 1} não possui um formato válido.`);
+  }
+
+  const date = String(record.date || "");
+  if (!validBackupDate(date)) {
+    throw new Error(`O registro ${index + 1} possui uma data inválida ou futura.`);
+  }
+  if (seenDates.has(date)) {
+    throw new Error(`O backup possui mais de um registro para ${dateBR(date)}.`);
+  }
+  seenDates.add(date);
+
+  const kind = ["work", "holiday", "medical", "absence"].includes(record.kind)
+    ? record.kind
+    : "work";
+  const note = sanitizeBackupText(record.note, 500);
+  const base = {
+    id: backupUuid(),
+    date,
+    kind,
+    note,
+    savedAt: new Date().toISOString()
+  };
+
+  if (kind !== "work") {
+    const status = DAY_STATUS[kind];
+    return {
+      ...base,
+      label: status?.label || "Dia classificado",
+      total: 0,
+      balance: status?.balance || 0,
+      absenceExcused: kind === "absence" && record.absenceExcused === true
+    };
+  }
+
+  const noLunch = record.noLunch === true;
+  const entry = String(record.entry || "");
+  const realExit = String(record.realExit || "");
+  const lunchOut = noLunch ? "" : String(record.lunchOut || "");
+  const lunchBack = noLunch ? "" : String(record.lunchBack || "");
+
+  if (!validBackupTime(entry) || !validBackupTime(realExit)) {
+    throw new Error(`O registro de ${dateBR(date)} possui entrada ou saída inválida.`);
+  }
+  if (!noLunch && (!validBackupTime(lunchOut) || !validBackupTime(lunchBack))) {
+    throw new Error(`O registro de ${dateBR(date)} possui intervalo inválido.`);
+  }
+
+  const entryMinutes = toMinutes(entry);
+  const exitMinutes = toMinutes(realExit);
+  let total = 0;
+
+  if (noLunch) {
+    if (exitMinutes < entryMinutes) {
+      throw new Error(`A saída de ${dateBR(date)} ocorre antes da entrada.`);
+    }
+    total = exitMinutes - entryMinutes;
+  } else {
+    const lunchOutMinutes = toMinutes(lunchOut);
+    const lunchBackMinutes = toMinutes(lunchBack);
+    const sequenceError = validateSequence(
+      entryMinutes,
+      lunchOutMinutes,
+      lunchBackMinutes,
+      exitMinutes
+    );
+    if (sequenceError) {
+      throw new Error(`${dateBR(date)}: ${sequenceError}`);
+    }
+    total = (lunchOutMinutes - entryMinutes) + (exitMinutes - lunchBackMinutes);
+  }
+
+  if (!Number.isFinite(total) || total < 0 || total > 1440) {
+    throw new Error(`O total trabalhado em ${dateBR(date)} está fora do limite permitido.`);
+  }
+
+  const balance = total - JOURNEY;
+  const specialWorkType = ["holiday", "weekend"].includes(record.specialWorkType)
+    ? record.specialWorkType
+    : null;
+  const negativeBase = balance < -TOLERANCE || specialWorkType
+    ? Math.max(0, Math.abs(Math.min(balance, 0)))
+    : 0;
+  const requestedExcuse = Math.max(
+    0,
+    Math.min(1440, Math.floor(finiteNumber(record.negativeExcusedMinutes, 0)))
+  );
+
+  return {
+    ...base,
+    entry,
+    lunchOut,
+    lunchBack,
+    realExit,
+    noLunch,
+    total,
+    balance,
+    ...(specialWorkType ? { specialWorkType } : {}),
+    ...(negativeBase > 0 && requestedExcuse > 0
+      ? {
+          negativeExcusedMinutes: Math.min(negativeBase, requestedExcuse),
+          negativeExcuseReason: sanitizeBackupText(record.negativeExcuseReason, 120)
+        }
+      : {})
+  };
+}
+
+function sanitizeImportedAchievementState(source, currentUserData) {
+  const clean = newAchievementState(currentUserData);
+  if (!isPlainObject(source)) return clean;
+
+  const validIds = new Set(ACHIEVEMENTS.map((achievement) => achievement.id));
+  const unlocked = isPlainObject(source.unlocked) ? source.unlocked : {};
+
+  Object.entries(unlocked).forEach(([id, value]) => {
+    if (!validIds.has(id) || !isPlainObject(value)) return;
+    const parsedAt = new Date(value.at);
+    clean.unlocked[id] = {
+      at: Number.isNaN(parsedAt.getTime()) ? new Date().toISOString() : parsedAt.toISOString(),
+      source: sanitizeBackupText(value.source, 80) || "backup importado"
+    };
+  });
+
+  ["repeatCounts", "dynamicValues"].forEach((field) => {
+    const values = isPlainObject(source[field]) ? source[field] : {};
+    Object.entries(values).forEach(([id, value]) => {
+      if (!validIds.has(id)) return;
+      const number = Math.max(0, Math.min(1000000, finiteNumber(value, 0)));
+      clean[field][id] = number;
+    });
+  });
+
+  const usage = isPlainObject(source.usage) ? source.usage : {};
+  clean.usage.statsOpenDates = Array.isArray(usage.statsOpenDates)
+    ? [...new Set(usage.statsOpenDates.filter(validBackupDate))].slice(-370)
+    : [];
+  clean.usage.statsPeriodsViewed = Array.isArray(usage.statsPeriodsViewed)
+    ? [...new Set(usage.statsPeriodsViewed.map((value) => sanitizeBackupText(value, 30)).filter(Boolean))].slice(0, 20)
+    : [];
+  clean.usage.historyOpenCount = Math.max(0, Math.min(100000, Math.floor(finiteNumber(usage.historyOpenCount, 0))));
+  clean.usage.mascotsUsed = Array.isArray(usage.mascotsUsed)
+    ? [...new Set(usage.mascotsUsed.filter((id) => MASCOTS[id]))].slice(0, MASCOT_IDS.length)
+    : [ensureMascot(currentUserData)];
+  clean.usage.financialViewed = usage.financialViewed === true;
+  clean.usage.personalRecordBroken = usage.personalRecordBroken === true;
+  clean.initialized = source.initialized === true;
+  return clean;
+}
+
+function sanitizeImportedCupViews(source) {
+  if (!isPlainObject(source)) return {};
+  const clean = {};
+
+  Object.entries(source).slice(0, 120).forEach(([monthKey, value]) => {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(monthKey)) return;
+    const date = new Date(value);
+    clean[monthKey] = Number.isNaN(date.getTime())
+      ? new Date().toISOString()
+      : date.toISOString();
+  });
+  return clean;
+}
+
+function sanitizeImportedAccount(imported, current) {
+  if (!isPlainObject(imported)) throw new Error("Backup inválido.");
+  if (!Array.isArray(imported.history)) {
+    throw new Error("O backup não contém um histórico válido.");
+  }
+  if (imported.history.length > MAX_BACKUP_HISTORY) {
+    throw new Error(`O backup ultrapassa o limite de ${MAX_BACKUP_HISTORY} registros.`);
+  }
+
+  const seenDates = new Set();
+  const history = imported.history.map((record, index) =>
+    sanitizeImportedRecord(record, index, seenDates)
+  );
+  const salarySource = isPlainObject(imported.salarySettings)
+    ? imported.salarySettings
+    : {};
+
+  const clean = {
+    ...current,
+    mascot: MASCOTS[imported.mascot] ? imported.mascot : DEFAULT_MASCOT,
+    profileAvatarMode: ["mascot", "google"].includes(imported.profileAvatarMode)
+      ? imported.profileAvatarMode
+      : "mascot",
+    palette: PALETTES[imported.palette] ? imported.palette : DEFAULT_PALETTE,
+    paletteIndependent: imported.paletteIndependent === true,
+    compensationDays: isPlainObject(imported.compensationDays)
+      ? Object.fromEntries(
+          Object.entries(imported.compensationDays)
+            .filter(([key]) => /^\d{4}-(0[1-9]|1[0-2])$/.test(key))
+            .slice(0, 120)
+            .map(([key, value]) => [key, Math.max(0, Math.min(31, Math.floor(finiteNumber(value, 0))))])
+        )
+      : {},
+    salarySettings: {
+      enabled: salarySource.enabled === true,
+      salaryBase: Math.max(0, Math.min(10000000, finiteNumber(salarySource.salaryBase, 0))),
+      divisor: Math.max(1, Math.min(1000, finiteNumber(salarySource.divisor, 200))),
+      weekdayPremium: Math.max(0, Math.min(500, finiteNumber(salarySource.weekdayPremium, 50))),
+      specialPremium: Math.max(0, Math.min(500, finiteNumber(salarySource.specialPremium, 100))),
+      estimateNegative: salarySource.estimateNegative !== false
+    },
+    lastSeenRelease: sanitizeBackupText(imported.lastSeenRelease, 40),
+    cupResultViews: sanitizeImportedCupViews(imported.cupResultViews),
+    history
+  };
+
+  clean.achievementState = sanitizeImportedAchievementState(
+    imported.achievementState,
+    clean
+  );
+  return clean;
+}
+
 async function importBackupFile(file) {
   try {
-    const data = JSON.parse(await file.text());
+    if (!file || file.size <= 0) {
+      throw new Error("Selecione um arquivo de backup válido.");
+    }
+    if (file.size > MAX_BACKUP_BYTES) {
+      throw new Error("O backup é grande demais. O limite é de 2 MB.");
+    }
+
+    const raw = await file.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error("O arquivo não contém um JSON válido.");
+    }
+
     const imported = data?.account;
     const allAccounts = accounts();
     const current = allAccounts[currentUser];
 
-    if (!current || !imported || typeof imported !== "object") {
-      throw new Error("Backup inválido");
+    if (!current || !imported) {
+      throw new Error("O backup não pertence a uma conta válida.");
     }
 
-    if (!Array.isArray(imported.history)) {
-      throw new Error("O backup não contém um histórico válido");
-    }
+    const sanitized = sanitizeImportedAccount(imported, current);
 
     if (!confirm(
-      "Importar este backup substituirá histórico, preferências e medalhas da conta atual. Continuar?"
+      `Importar este backup substituirá ${sanitized.history.length} registro(s), preferências e medalhas da conta atual. Continuar?`
     )) {
       return;
     }
 
-    const importedMascot = ensureMascot(imported);
-    const importedPalette = ensurePalette(imported);
-
     allAccounts[currentUser] = normalizeCloudAccount(
-      {
-        ...current,
-        mascot: importedMascot,
-        palette: importedPalette,
-        paletteIndependent: imported.paletteIndependent === true,
-        salarySettings: {
-          ...DEFAULT_SALARY_SETTINGS,
-          ...(imported.salarySettings || {})
-        },
-        achievementState: imported.achievementState || newAchievementState(current),
-        history: imported.history
-      },
+      sanitized,
       authSession.user
     );
 
@@ -5303,9 +5801,19 @@ async function importBackupFile(file) {
     updateAccountInterface();
     renderHistory();
     renderAchievements();
-    toast("Backup importado e sincronizado.");
+    showRecordFeedback(
+      "success",
+      "Backup importado!",
+      `${sanitized.history.length} registro(s) foram validados e sincronizados com segurança.`
+    );
   } catch (error) {
-    toast(error.message || "Não foi possível importar o backup.", "error");
+    console.error("Falha ao importar backup.", error);
+    showRecordFeedback(
+      "error",
+      "Backup recusado",
+      friendlyCloudError(error, "Não foi possível importar esse arquivo."),
+      el.backupInput
+    );
   }
 }
 
@@ -7753,7 +8261,45 @@ function renderCalendar() {
     });
 }
 
-el.googleLogin.addEventListener("click", signInWithGoogle);
+document.addEventListener("error", (event) => {
+  const image = event.target;
+  if (image instanceof HTMLImageElement && image.matches(".public-google-avatar-image")) {
+    image.hidden = true;
+    image.parentElement?.classList.add("avatar-load-failed");
+    return;
+  }
+}, true);
+
+window.addEventListener("unhandledrejection", (event) => {
+  const reason = event.reason;
+  const message = String(reason?.message || reason || "").toLowerCase();
+  if (/aborterror|cancelled|canceled/.test(message)) return;
+  console.error("Falha assíncrona não tratada.", reason);
+  showRecordFeedback(
+    "error",
+    "Algo não saiu como esperado",
+    friendlyCloudError(reason, "Atualize a página e tente novamente.")
+  );
+});
+
+document.addEventListener("submit", (event) => {
+  const form = event.target;
+  window.setTimeout(() => {
+    const errorNode = form?.querySelector?.(".status.error:not(.hidden)");
+    const message = String(errorNode?.textContent || "").trim();
+    if (!message) return;
+    showRecordFeedback("error", "Confira as informações", message, form);
+  }, 0);
+}, true);
+
+window.addEventListener("resize", () => {
+  clearTimeout(googleLoginResizeTimer);
+  googleLoginResizeTimer = window.setTimeout(() => {
+    if (!el.authView?.classList.contains("hidden")) renderGoogleLoginButton();
+  }, 180);
+});
+
+el.googleLoginFallback?.addEventListener("click", signInWithGoogleLegacy);
 el.logout.onclick = logout;
 
 el.updatesButton.addEventListener("click", openUpdatesDialog);
@@ -8007,7 +8553,7 @@ el.salaryBase.addEventListener("blur", () => {
 
 el.parseTodayText.onclick = extractToday;
 el.clearToday.onclick = clearToday;
-el.todayUseRealExit.addEventListener("change", calculateToday);
+el.todayUseRealExit.addEventListener("change", calculateTodayWithFeedback);
 
 [
   el.todayEntry,
@@ -8016,7 +8562,7 @@ el.todayUseRealExit.addEventListener("change", calculateToday);
   el.todayRealExit
 ].forEach((input) => {
   input.addEventListener("input", calculateToday);
-  input.addEventListener("change", calculateToday);
+  input.addEventListener("change", calculateTodayWithFeedback);
 });
 
 el.parseRecordText.onclick = extractRecord;
@@ -8168,7 +8714,13 @@ window.addEventListener("online", () => {
 });
 
 window.addEventListener("offline", () => {
-  if (currentUser) setSyncState("offline");
+  if (!currentUser) return;
+  setSyncState("offline");
+  showRecordFeedback(
+    "error",
+    "Você ficou sem conexão",
+    "As alterações continuam neste dispositivo e serão sincronizadas quando a internet voltar."
+  );
 });
 
 document.addEventListener("visibilitychange", () => {

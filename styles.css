@@ -7222,3 +7222,34 @@ html[data-theme="dark"] .rank-tier-common{--rank-deep:#c0c6d0}
   .delete-history-summary{align-items:flex-start;flex-direction:column;gap:5px}
   .delete-history-summary strong{text-align:left}
 }
+
+
+/* v2.8 — login Google nativo e feedback global */
+.google-login-host{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:54px;
+  border-radius:15px;
+  overflow:hidden;
+  transition:opacity .16s ease,filter .16s ease;
+}
+.google-login-host.is-disabled{
+  opacity:.55;
+  filter:grayscale(.2);
+  pointer-events:none;
+}
+.google-login-host>div,
+.google-login-host iframe{
+  max-width:100%!important;
+}
+.record-feedback-layer.global-feedback .record-feedback-card{
+  width:min(470px,calc(100vw - 36px));
+}
+.security-note{
+  margin-top:10px;
+  color:var(--muted);
+  font-size:.68rem;
+  line-height:1.45;
+}
