@@ -7025,3 +7025,102 @@ html[data-theme="dark"] .rank-tier-common{--rank-deep:#c0c6d0}
   .mascot-carousel-nav{width:32px;height:32px;font-size:1.08rem}
   .mascot-grid.mascot-carousel-track .mascot-option{flex-basis:72px;width:72px;height:72px}
 }
+
+
+/* v2.7.11 — confirmação visual ao registrar um dia */
+.record-feedback-layer{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:grid;
+  place-items:center;
+  padding:22px;
+  pointer-events:none;
+  isolation:isolate;
+}
+.record-feedback-layer::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  opacity:0;
+}
+.record-feedback-layer.success::before{background:rgba(30,190,102,.22)}
+.record-feedback-layer.error::before{background:rgba(226,54,72,.22)}
+.record-feedback-layer.animate::before{
+  animation:record-screen-flash .78s ease-out both;
+}
+.record-feedback-card{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  gap:14px;
+  width:min(440px,calc(100vw - 36px));
+  padding:18px 20px;
+  border:1px solid color-mix(in srgb,var(--feedback-color) 45%,var(--line));
+  border-radius:22px;
+  background:color-mix(in srgb,var(--card-solid) 94%,transparent);
+  color:var(--text);
+  box-shadow:0 24px 70px rgba(0,0,0,.24),0 0 0 6px color-mix(in srgb,var(--feedback-color) 11%,transparent);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  opacity:0;
+  transform:translateY(12px) scale(.96);
+}
+.record-feedback-layer.success{--feedback-color:#20bd68}
+.record-feedback-layer.error{--feedback-color:#e23648}
+.record-feedback-layer.animate .record-feedback-card{
+  animation:record-feedback-card-in .28s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.record-feedback-icon{
+  display:grid;
+  place-items:center;
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--feedback-color) 14%,var(--card-solid));
+  color:var(--feedback-color);
+  border:2px solid color-mix(in srgb,var(--feedback-color) 68%,transparent);
+  font-size:1.45rem;
+  font-weight:950;
+  box-shadow:0 8px 22px color-mix(in srgb,var(--feedback-color) 22%,transparent);
+}
+.record-feedback-copy{display:grid;gap:4px;min-width:0}
+.record-feedback-copy strong{color:var(--feedback-color);font-size:1rem;line-height:1.2}
+.record-feedback-copy p{margin:0;color:var(--text);font-size:.78rem;line-height:1.45}
+.record-field-attention{
+  border-color:#e23648!important;
+  box-shadow:0 0 0 4px rgba(226,54,72,.15)!important;
+  animation:record-field-shake .34s ease-in-out;
+}
+@keyframes record-screen-flash{
+  0%{opacity:0}
+  16%{opacity:1}
+  32%{opacity:.08}
+  48%{opacity:.82}
+  68%{opacity:.04}
+  100%{opacity:0}
+}
+@keyframes record-feedback-card-in{
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes record-field-shake{
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-5px)}
+  50%{transform:translateX(5px)}
+  75%{transform:translateX(-3px)}
+}
+@media(max-width:620px){
+  .record-feedback-layer{padding:16px}
+  .record-feedback-card{grid-template-columns:42px 1fr;gap:11px;padding:15px 16px;border-radius:19px}
+  .record-feedback-icon{width:42px;height:42px;font-size:1.15rem}
+  .record-feedback-copy strong{font-size:.9rem}
+  .record-feedback-copy p{font-size:.7rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .record-feedback-layer.animate::before,
+  .record-feedback-layer.animate .record-feedback-card,
+  .record-field-attention{animation:none!important}
+  .record-feedback-layer.animate .record-feedback-card{opacity:1;transform:none}
+  .record-feedback-layer.animate::before{opacity:.18}
+}

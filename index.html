@@ -15,10 +15,20 @@
       document.documentElement.dataset.theme = saved || preferred;
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=2.7.10-resultado-real" />
+  <link rel="stylesheet" href="styles.css?v=2.7.11-feedback-registro" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <div id="recordFeedback" class="record-feedback-layer hidden" role="status" aria-live="assertive" aria-atomic="true">
+    <div id="recordFeedbackCard" class="record-feedback-card">
+      <span id="recordFeedbackIcon" class="record-feedback-icon" aria-hidden="true">✓</span>
+      <div class="record-feedback-copy">
+        <strong id="recordFeedbackTitle">Registro concluído</strong>
+        <p id="recordFeedbackMessage">O dia foi salvo no histórico.</p>
+      </div>
+    </div>
+  </div>
 
   <main class="shell">
     <section id="authView" class="auth-wrap cloud-auth-view">
@@ -485,7 +495,7 @@
         </section>
 
         <div class="actions">
-          <button id="saveDay" class="btn primary" type="button" disabled>Salvar dia no histórico</button>
+          <button id="saveDay" class="btn primary" type="button">Salvar dia no histórico</button>
           <button id="clearRecord" class="btn secondary" type="button">Limpar registro</button>
         </div>
         <p id="recordError" class="status error hidden"></p>
@@ -1432,6 +1442,6 @@
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=2.7.10-resultado-real"></script>
+  <script src="app.js?v=2.7.11-feedback-registro"></script>
 </body>
 </html>

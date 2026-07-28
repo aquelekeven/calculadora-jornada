@@ -435,6 +435,11 @@ const el = {
   saveDay: $("saveDay"),
   clearRecord: $("clearRecord"),
   recordError: $("recordError"),
+  recordFeedback: $("recordFeedback"),
+  recordFeedbackCard: $("recordFeedbackCard"),
+  recordFeedbackIcon: $("recordFeedbackIcon"),
+  recordFeedbackTitle: $("recordFeedbackTitle"),
+  recordFeedbackMessage: $("recordFeedbackMessage"),
 
   calendarDialog: $("calendarDialog"),
   calendarTitle: $("calendarTitle"),
@@ -479,6 +484,8 @@ let achievementFilter = "all";
 let achievementCategoryFilter = "all";
 let lastAppPage = "today";
 let toastTimer = null;
+let recordFeedbackTimer = null;
+let recordFieldAttentionTimer = null;
 let calendarCursor = new Date();
 let noteTargetId = null;
 let negativeExcuseTargetId = null;
@@ -960,6 +967,145 @@ function toast(message, type = "ok") {
   toastTimer = setTimeout(() => {
     el.toast.classList.add("hidden");
   }, 3500);
+}
+
+
+function clearRecordFieldAttention() {
+  clearTimeout(recordFieldAttentionTimer);
+  document
+    .querySelectorAll(".record-field-attention")
+    .forEach((element) => element.classList.remove("record-field-attention"));
+}
+
+function highlightRecordField(target) {
+  if (!target) return;
+
+  clearRecordFieldAttention();
+  target.classList.add("record-field-attention");
+
+  requestAnimationFrame(() => {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => {
+      try {
+        target.focus({ preventScroll: true });
+      } catch (_error) {
+        target.focus?.();
+      }
+    }, 260);
+  });
+
+  recordFieldAttentionTimer = window.setTimeout(() => {
+    target.classList.remove("record-field-attention");
+  }, 3000);
+}
+
+function showRecordFeedback(type, title, message, target = null) {
+  if (!el.recordFeedback) return;
+
+  clearTimeout(recordFeedbackTimer);
+  el.recordFeedback.classList.add("hidden");
+  el.recordFeedback.classList.remove("success", "error", "animate");
+
+  el.recordFeedbackTitle.textContent = title;
+  el.recordFeedbackMessage.textContent = message;
+  el.recordFeedbackIcon.textContent = type === "error" ? "!" : "✓";
+  el.recordFeedback.classList.add(type === "error" ? "error" : "success");
+
+  // Reinicia as animações mesmo quando duas mensagens aparecem em sequência.
+  void el.recordFeedback.offsetWidth;
+  el.recordFeedback.classList.remove("hidden");
+  el.recordFeedback.classList.add("animate");
+
+  if (type === "error") {
+    highlightRecordField(target);
+  } else {
+    clearRecordFieldAttention();
+  }
+
+  recordFeedbackTimer = window.setTimeout(() => {
+    el.recordFeedback.classList.add("hidden");
+    el.recordFeedback.classList.remove("animate", "success", "error");
+  }, type === "error" ? 3200 : 2300);
+}
+
+function recordSaveIssue() {
+  const withLunch = recordUsesLunchInterval();
+  const entry = toMinutes(el.recordEntry.value);
+  const lunchOut = toMinutes(el.recordLunchOut.value);
+  const lunchBack = toMinutes(el.recordLunchBack.value);
+  const realExit = toMinutes(el.recordRealExit.value);
+
+  if (!el.date.value) {
+    return {
+      message: "Selecione a data do dia que você quer registrar.",
+      target: el.datePickerButton
+    };
+  }
+
+  if (el.date.value > today()) {
+    return {
+      message: "A data escolhida está no futuro. Selecione hoje ou um dia anterior.",
+      target: el.datePickerButton
+    };
+  }
+
+  if (entry === null) {
+    return {
+      message: "Preencha o horário de entrada.",
+      target: el.recordEntry
+    };
+  }
+
+  if (withLunch && lunchOut === null) {
+    return {
+      message: "Preencha o horário de saída para o almoço.",
+      target: el.recordLunchOut
+    };
+  }
+
+  if (withLunch && lunchBack === null) {
+    return {
+      message: "Preencha o horário de volta do almoço.",
+      target: el.recordLunchBack
+    };
+  }
+
+  if (realExit === null) {
+    return {
+      message: "Preencha o horário de saída real.",
+      target: el.recordRealExit
+    };
+  }
+
+  if (withLunch && lunchOut < entry) {
+    return {
+      message: "A saída para o almoço precisa acontecer depois da entrada.",
+      target: el.recordLunchOut
+    };
+  }
+
+  if (withLunch && lunchBack < lunchOut) {
+    return {
+      message: "A volta do almoço precisa acontecer depois da saída para o almoço.",
+      target: el.recordLunchBack
+    };
+  }
+
+  if (withLunch && realExit < lunchBack) {
+    return {
+      message: "A saída real precisa acontecer depois da volta do almoço.",
+      target: el.recordRealExit
+    };
+  }
+
+  if (!withLunch && realExit < entry) {
+    return {
+      message: "A saída real precisa acontecer depois da entrada.",
+      target: el.recordRealExit
+    };
+  }
+
+  return null;
 }
 
 function applyTheme(theme) {
@@ -1967,7 +2113,6 @@ function resetRecordMode() {
 function calculateRecord() {
   setError(el.recordError);
   lastRecord = null;
-  el.saveDay.disabled = true;
 
   const withLunch = recordUsesLunchInterval();
   const entry = toMinutes(el.recordEntry.value);
@@ -2105,7 +2250,6 @@ function calculateRecord() {
     specialWorkType
   };
 
-  el.saveDay.disabled = false;
 }
 function extractRecord() {
   const parsed = parsePastedText(el.recordPastedText.value);
@@ -2113,16 +2257,19 @@ function extractRecord() {
   const expected = withLunch ? 4 : 2;
 
   if (!el.date.value) {
-    el.recordParseStatus.textContent =
-      "Escolha primeiro a data no calendário.";
+    const message = "Escolha primeiro a data no calendário.";
+    el.recordParseStatus.textContent = message;
     el.recordParseStatus.className = "status error";
+    showRecordFeedback("error", "Não foi possível preencher", message, el.datePickerButton);
     return;
   }
 
   if (parsed.times.length !== expected) {
-    el.recordParseStatus.textContent =
+    const message =
       `Encontrei ${parsed.times.length} horário(s). Neste modo, cole exatamente ${expected} horários.`;
+    el.recordParseStatus.textContent = message;
     el.recordParseStatus.className = "status error";
+    showRecordFeedback("error", "Confira o texto do ponto", message, el.recordPastedText);
     return;
   }
 
@@ -2156,8 +2303,36 @@ function clearRecord() {
   resetRecordMode();
 }
 
+
+function resetRecordAfterSuccess() {
+  el.recordPastedText.value = "";
+  el.recordEntry.value = "";
+  el.recordLunchOut.value = "";
+  el.recordLunchBack.value = "";
+  el.recordRealExit.value = "";
+  el.date.value = "";
+  el.dateDisplay.textContent = "Selecionar data";
+  el.recordParseStatus.classList.add("hidden");
+  setError(el.recordError);
+  lastRecord = null;
+  resetRecordMode();
+}
+
 function saveDay() {
-  if (!lastRecord) return;
+  calculateRecord();
+
+  const issue = recordSaveIssue();
+  if (issue || !lastRecord) {
+    const message = issue?.message || "Confira a data e os horários antes de salvar.";
+    setError(el.recordError, message);
+    showRecordFeedback(
+      "error",
+      "Não foi possível salvar",
+      message,
+      issue?.target || el.recordFieldsGrid
+    );
+    return;
+  }
 
   const allAccounts = accounts();
   const user = allAccounts[currentUser];
@@ -2176,8 +2351,9 @@ function saveDay() {
   const existingIndex = history.findIndex(
     (record) => record.date === item.date
   );
+  const isReplacement = existingIndex >= 0;
 
-  if (existingIndex >= 0) {
+  if (isReplacement) {
     const shouldReplace = confirm(
       "Já existe um registro nessa data. Substituir?"
     );
@@ -2212,11 +2388,19 @@ function saveDay() {
   renderHistory();
   evaluateAchievements({ source: "registro de jornada" });
   renderAchievements();
-  if (item.noLunch && workNegativeBaseMinutes(item) > 0) {
-    toast("Dia sem intervalo salvo. O saldo negativo pode ser abonado no Histórico.");
-  } else {
-    toast("Dia salvo no histórico.");
-  }
+
+  const savedDate = dateBR(item.date);
+  const totalLabel = duration(item.total);
+  const extraMessage = item.noLunch && workNegativeBaseMinutes(item) > 0
+    ? " O saldo negativo pode ser abonado no Histórico."
+    : "";
+
+  resetRecordAfterSuccess();
+  showRecordFeedback(
+    "success",
+    isReplacement ? "Dia atualizado!" : "Dia registrado!",
+    `${savedDate} foi salvo com ${totalLabel} trabalhadas.${extraMessage}`
+  );
 }
 
 
