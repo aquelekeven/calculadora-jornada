@@ -4585,6 +4585,234 @@ function workBalanceAdjustmentHtml(item) {
   return "";
 }
 
+
+function historyEditFormHtml(item) {
+  const withLunch = item.noLunch !== true;
+
+  return `
+    <form class="calendar-inline-editor hidden" data-id="${escapeRankingText(item.id)}">
+      <div class="calendar-edit-mode">
+        <label>
+          <input
+            type="radio"
+            name="history-mode-${escapeRankingText(item.id)}"
+            value="with-lunch"
+            ${withLunch ? "checked" : ""}
+          />
+          Com intervalo
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="history-mode-${escapeRankingText(item.id)}"
+            value="no-lunch"
+            ${withLunch ? "" : "checked"}
+          />
+          Sem intervalo
+        </label>
+      </div>
+
+      <div class="calendar-edit-grid ${withLunch ? "" : "no-lunch"}">
+        <label>
+          Entrada
+          <input name="entry" type="time" value="${escapeRankingText(item.entry || "")}" required />
+        </label>
+        <label class="calendar-edit-lunch">
+          Saída almoço
+          <input name="lunchOut" type="time" value="${escapeRankingText(item.lunchOut || "")}" />
+        </label>
+        <label class="calendar-edit-lunch">
+          Volta almoço
+          <input name="lunchBack" type="time" value="${escapeRankingText(item.lunchBack || "")}" />
+        </label>
+        <label>
+          Saída real
+          <input name="realExit" type="time" value="${escapeRankingText(item.realExit || "")}" required />
+        </label>
+      </div>
+
+      <p class="calendar-edit-preview" aria-live="polite"></p>
+      <p class="calendar-edit-error hidden" aria-live="polite"></p>
+
+      <div class="calendar-edit-actions">
+        <button class="btn secondary small calendar-edit-cancel" type="button">Cancelar</button>
+        <button class="btn primary small" type="submit">Salvar alterações</button>
+      </div>
+    </form>
+  `;
+}
+
+function historyEditorCalculation(form, record) {
+  const noLunch =
+    form.querySelector('input[type="radio"][value="no-lunch"]')?.checked === true;
+  const entryText = form.elements.entry.value;
+  const lunchOutText = form.elements.lunchOut.value;
+  const lunchBackText = form.elements.lunchBack.value;
+  const realExitText = form.elements.realExit.value;
+  const entry = toMinutes(entryText);
+  const lunchOut = toMinutes(lunchOutText);
+  const lunchBack = toMinutes(lunchBackText);
+  const realExit = toMinutes(realExitText);
+  const required = noLunch
+    ? [entry, realExit]
+    : [entry, lunchOut, lunchBack, realExit];
+
+  if (required.some((value) => value === null)) {
+    return { error: noLunch
+      ? "Preencha a entrada e a saída real."
+      : "Preencha os quatro horários."
+    };
+  }
+
+  let error = "";
+
+  if (noLunch) {
+    if (realExit < entry) error = "A saída real precisa ser depois da entrada.";
+  } else {
+    error = validateSequence(entry, lunchOut, lunchBack, realExit);
+  }
+
+  if (error) return { error };
+
+  const total = noLunch
+    ? realExit - entry
+    : (lunchOut - entry) + (realExit - lunchBack);
+  const specialWorkType = record.specialWorkType || null;
+  const rawBalance = specialWorkType ? total : total - JOURNEY;
+  const effective = specialWorkType
+    ? rawBalance
+    : toleranceAdjustedBalance(rawBalance);
+
+  return {
+    item: {
+      ...record,
+      entry: entryText,
+      lunchOut: noLunch ? "" : lunchOutText,
+      lunchBack: noLunch ? "" : lunchBackText,
+      realExit: realExitText,
+      noLunch,
+      total,
+      balance: rawBalance,
+      specialWorkType,
+      savedAt: new Date().toISOString()
+    },
+    total,
+    effective
+  };
+}
+
+function updateHistoryEditor(form) {
+  const record = historyRecordById(form.dataset.id);
+  if (!record) return;
+
+  const noLunch =
+    form.querySelector('input[type="radio"][value="no-lunch"]')?.checked === true;
+  form.querySelector(".calendar-edit-grid")?.classList.toggle("no-lunch", noLunch);
+  form.querySelectorAll(".calendar-edit-lunch").forEach((field) => {
+    field.classList.toggle("hidden", noLunch);
+  });
+
+  const preview = form.querySelector(".calendar-edit-preview");
+  const errorElement = form.querySelector(".calendar-edit-error");
+  const result = historyEditorCalculation(form, record);
+
+  if (result.error) {
+    preview.textContent = "";
+    errorElement.textContent = result.error;
+    errorElement.classList.remove("hidden");
+    return;
+  }
+
+  errorElement.textContent = "";
+  errorElement.classList.add("hidden");
+  preview.textContent =
+    `Novo total: ${duration(result.total)} · saldo ${duration(result.effective, true)}`;
+}
+
+function toggleHistoryEditor(id, open) {
+  const form = el.historyList?.querySelector(
+    `.calendar-inline-editor[data-id="${CSS.escape(id)}"]`
+  );
+  const article = form?.closest(".history-calendar-day");
+
+  if (!form || !article) return;
+
+  el.historyList
+    .querySelectorAll(".calendar-inline-editor:not(.hidden)")
+    .forEach((otherForm) => {
+      if (otherForm !== form) {
+        otherForm.classList.add("hidden");
+        otherForm.closest(".history-calendar-day")?.classList.remove("editing");
+      }
+    });
+
+  form.classList.toggle("hidden", !open);
+  article.classList.toggle("editing", open);
+
+  if (open) {
+    updateHistoryEditor(form);
+    requestAnimationFrame(() => form.elements.entry?.focus());
+  }
+}
+
+function saveHistoryEditor(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const id = form.dataset.id;
+  const allAccounts = accounts();
+  const user = allAccounts[currentUser];
+  const history = Array.isArray(user?.history) ? user.history : [];
+  const index = history.findIndex((record) => record.id === id);
+  const errorElement = form.querySelector(".calendar-edit-error");
+
+  if (index < 0) {
+    errorElement.textContent = "Registro não encontrado. Atualize a página.";
+    errorElement.classList.remove("hidden");
+    return;
+  }
+
+  const previous = history[index];
+  const result = historyEditorCalculation(form, previous);
+
+  if (result.error) {
+    errorElement.textContent = result.error;
+    errorElement.classList.remove("hidden");
+    return;
+  }
+
+  const updated = result.item;
+  const maximumExcuse = workNegativeBaseMinutes(updated);
+  const previousExcuse = negativeExcusedMinutes(previous);
+
+  if (maximumExcuse > 0 && previousExcuse > 0) {
+    updated.negativeExcusedMinutes = Math.min(maximumExcuse, previousExcuse);
+    updated.negativeExcuseReason =
+      typeof previous.negativeExcuseReason === "string"
+        ? previous.negativeExcuseReason.slice(0, 120)
+        : "";
+  } else {
+    delete updated.negativeExcusedMinutes;
+    delete updated.negativeExcuseReason;
+  }
+
+  history[index] = updated;
+  user.history = history;
+  allAccounts[currentUser] = user;
+  saveAccounts(allAccounts);
+
+  historyMonthKey = updated.date.slice(0, 7);
+  renderHistory();
+  evaluateAchievements({ source: "edição de jornada" });
+  renderAchievements();
+
+  showRecordFeedback(
+    "success",
+    "Horários atualizados!",
+    `${dateBR(updated.date)} foi recalculado para ${duration(updated.total)} trabalhadas.`
+  );
+}
+
 function calendarWorkCell(item) {
   const balance = effectiveBalance(item);
   const balanceClass = balance > 0
@@ -4626,9 +4854,23 @@ function calendarWorkCell(item) {
         </small>
       </div>
 
+      ${historyEditFormHtml(item)}
+
       <footer class="calendar-cell-actions">
         ${negativeExcuseButtonHtml(item)}
         ${noteButtonHtml(item)}
+        <button
+          class="calendar-edit tooltip-target"
+          data-id="${escapeRankingText(item.id)}"
+          data-tooltip="Editar os horários deste registro."
+          type="button"
+          aria-label="Editar os horários deste registro"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m4 16.5-.5 4 4-.5L18.7 8.8l-3.5-3.5L4 16.5Z"/>
+            <path d="m13.8 6.7 3.5 3.5"/>
+          </svg>
+        </button>
         <button
           class="calendar-delete tooltip-target"
           data-id="${escapeRankingText(item.id)}"
@@ -5265,6 +5507,29 @@ function renderHistory() {
       navigateHistoryMonth(1);
     });
   }
+
+  el.historyList
+    .querySelectorAll(".calendar-edit")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        hideFloatingTooltip();
+        const form = el.historyList.querySelector(
+          `.calendar-inline-editor[data-id="${CSS.escape(button.dataset.id)}"]`
+        );
+        toggleHistoryEditor(button.dataset.id, form?.classList.contains("hidden"));
+      });
+    });
+
+  el.historyList
+    .querySelectorAll(".calendar-inline-editor")
+    .forEach((form) => {
+      form.addEventListener("submit", saveHistoryEditor);
+      form.addEventListener("input", () => updateHistoryEditor(form));
+      form.addEventListener("change", () => updateHistoryEditor(form));
+      form.querySelector(".calendar-edit-cancel")?.addEventListener("click", () => {
+        toggleHistoryEditor(form.dataset.id, false);
+      });
+    });
 
   el.historyList
     .querySelectorAll(".calendar-delete")
