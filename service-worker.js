@@ -1,10 +1,11 @@
-const CACHE = "jornada-fb-static-v2-9-edit-history";
+const CACHE = "jornada-fb-static-v2-10-ocr-beta";
 const SCOPE = self.registration.scope;
 const PRECACHE = [
   "./",
   "./index.html",
-  "./styles.css?v=2.9-edicao-historico",
-  "./app.js?v=2.9-edicao-historico",
+  "./styles.css?v=2.10-ocr-beta",
+  "./app.js?v=2.10-ocr-beta",
+  "./point-ocr.js?v=2.10-ocr-beta",
   "./theme-bootstrap.js",
   "./manifest.webmanifest",
   "./icone-192.png",

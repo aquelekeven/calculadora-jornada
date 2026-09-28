@@ -718,6 +718,7 @@ function persistCurrentUserNow() {
   const account = cloudAccountsCache[currentUser];
   if (!account) return Promise.resolve();
 
+  const saveUserId = currentUser;
   const payload = JSON.parse(JSON.stringify(account));
   cloudSavePending = true;
   setSyncState(navigator.onLine ? "saving" : "offline");
@@ -725,11 +726,12 @@ function persistCurrentUserNow() {
   cloudSaveChain = cloudSaveChain
     .catch(() => undefined)
     .then(async () => {
+      if (currentUser !== saveUserId || authSession?.user?.id !== saveUserId) return;
       const { error } = await supabaseClient
         .from(SUPABASE_TABLE)
         .upsert(
           {
-            user_id: currentUser,
+            user_id: saveUserId,
             account_data: payload,
             updated_at: new Date().toISOString()
           },
@@ -963,6 +965,8 @@ async function clearPrivateBrowserData() {
 }
 
 function resetCloudInterface() {
+  pointOcr?.reset();
+  document.getElementById("pointOcrCard")?.classList.add("hidden");
   currentUser = null;
   cloudSessionUserId = null;
   cloudOfflineMode = false;
@@ -1371,6 +1375,7 @@ function toggleTheme() {
 
 function openApp(code) {
   currentUser = code;
+  pointOcr?.refresh();
 
   const allAccounts = accounts();
   const user = allAccounts[code];
@@ -8956,6 +8961,46 @@ if ("serviceWorker" in navigator) {
       .catch(console.warn);
   });
 }
+
+// The beta uses a server-verified identity, never editable profile metadata.
+const pointOcr = window.PointOCR?.mount({
+  userId: () => currentUser,
+  verifyUser: async () => {
+    if (!supabaseClient) return null;
+    const { data, error } = await supabaseClient.auth.getUser();
+    if (error) throw new Error("Não foi possível validar sua sessão. Confira a conexão.");
+    return data.user;
+  },
+  today,
+  history: () => accounts()[currentUser]?.history || [],
+  pending: () => cloudSavePending,
+  notify: message => toast(message, "error"),
+  save: async (rows, ownerId) => {
+    if (currentUser !== ownerId || authSession?.user?.id !== ownerId) {
+      throw new Error("A conta mudou durante a importação. Tente novamente.");
+    }
+    const account = accounts()[ownerId];
+    if (!account) throw new Error("Conta indisponível.");
+    const seen = new Set((account.history || []).map(item => item.date));
+    // Validate the complete batch before mutating the account.
+    const records = rows.map((row, index) => {
+      const record = sanitizeImportedRecord(row, index, seen);
+      if (record.kind === "work") {
+        record.specialWorkType = specialWorkTypeForDate(record.date);
+        if (record.specialWorkType) record.balance = record.total;
+      }
+      if (row.pending) record.note = "Importado de print com marcação pendente de aprovação no portal; horários conferidos pelo usuário.";
+      return record;
+    });
+    account.history = [...(account.history || []), ...records];
+    saveAccounts(accounts());
+    historyMonthKey = records[0].date.slice(0, 7);
+    renderHistory();
+    evaluateAchievements({ source: "importação de ponto" });
+    renderAchievements();
+    await persistCurrentUserNow();
+  }
+});
 
 resetRecordMode();
 initializeMathBurst();

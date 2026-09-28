@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://accounts.google.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; upgrade-insecure-requests" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com; worker-src 'self' blob:; connect-src 'self' https://unpkg.com https://*.supabase.co wss://*.supabase.co https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; upgrade-insecure-requests" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta id="themeColor" name="theme-color" content="#f5f5f7" />
@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <script src="theme-bootstrap.js"></script>
-  <link rel="stylesheet" href="styles.css?v=2.9-edicao-historico" />
+  <link rel="stylesheet" href="styles.css?v=2.10-ocr-beta" />
 </head>
 <body>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
@@ -405,6 +405,12 @@
       </section>
 
       <section id="recordPanel" class="hidden">
+        <section id="pointOcrCard" class="card block hidden">
+          <p class="eyebrow">Teste exclusivo · Importação de ponto</p>
+          <h2>Seu print vira registros</h2>
+          <p class="muted section-description">Leia as marcações de uma vez e confira cada dia antes de salvar. A imagem é processada neste dispositivo.</p>
+          <button id="pointOcrOpen" class="btn primary" type="button">Importar print do ponto</button>
+        </section>
         <section class="card block">
           <p class="eyebrow">Histórico</p>
           <h2>Registrar um dia trabalhado</h2>
@@ -1485,11 +1491,32 @@
     </div>
   </dialog>
 
+  <dialog id="pointOcrDialog" class="point-ocr-dialog" aria-labelledby="pointOcrTitle">
+    <div class="dialog-body">
+      <header class="point-ocr-heading">
+        <div><p class="eyebrow">Teste exclusivo</p><h2 id="pointOcrTitle">Importar print do ponto</h2></div>
+        <button id="pointOcrClose" class="btn secondary" type="button">Fechar</button>
+      </header>
+      <p class="muted">Inclua o mês/ano e o cabeçalho da tabela. A imagem fica no seu dispositivo; somente os registros confirmados entram no histórico.</p>
+      <label>Selecionar imagem<input id="pointOcrFile" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+      <p id="pointOcrStatus" class="status" role="status" aria-live="polite"></p>
+      <details><summary>Conferir imagem original</summary><img id="pointOcrPreview" alt="Print enviado para conferência" hidden /></details>
+      <label>Mês/ano do print<input id="pointOcrMonth" type="month" /></label>
+      <section id="pointOcrReview" hidden>
+        <div class="point-ocr-review-head"><h3>Confira antes de importar</h3><button id="pointOcrSelect" class="btn secondary small" type="button">Selecionar linhas sem alertas</button></div>
+        <p class="hint">Datas existentes serão preservadas. Finais de semana vazios são ignorados. Corrija qualquer leitura incorreta e confirme os avisos das linhas selecionadas.</p>
+        <div id="pointOcrRows"></div>
+      </section>
+      <div class="point-ocr-footer"><button id="pointOcrSave" class="btn primary" type="button" disabled>Importar dias selecionados</button></div>
+    </div>
+  </dialog>
+
   <input id="backupInput" class="hidden" type="file" accept=".json,application/json" />
 
   <script src="config.js"></script>
   <script src="https://accounts.google.com/gsi/client?hl=pt-BR"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2.81.1/dist/umd/supabase.js" crossorigin="anonymous"></script>
-  <script src="app.js?v=2.9-edicao-historico"></script>
+  <script src="point-ocr.js?v=2.10-ocr-beta"></script>
+  <script src="app.js?v=2.10-ocr-beta"></script>
 </body>
 </html>
