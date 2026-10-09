@@ -1,4 +1,4 @@
-const CACHE = "jornada-fb-static-v2-10-ocr-beta";
+const CACHE = "jornada-fb-static-v2-11-ocr-ux";
 const SCOPE = self.registration.scope;
 const PRECACHE = [
   "./",
