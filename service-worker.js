@@ -1,11 +1,11 @@
-const CACHE = "jornada-fb-static-v2-11-ocr-ux";
+const CACHE = "jornada-fb-static-v2-12-ocr-side-review";
 const SCOPE = self.registration.scope;
 const PRECACHE = [
   "./",
   "./index.html",
   "./styles.css?v=2.10-ocr-beta",
   "./app.js?v=2.10-ocr-beta",
-  "./point-ocr.js?v=2.10-ocr-beta",
+  "./point-ocr.js?v=2.12-ocr-side-review",
   "./theme-bootstrap.js",
   "./manifest.webmanifest",
   "./icone-192.png",
