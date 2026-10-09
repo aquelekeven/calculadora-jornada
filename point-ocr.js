@@ -166,9 +166,7 @@
             hd.h * 0.4
           ),
           height: Math.ceil(hd.h)
-        },
-        selected: false,
-        reviewed: false
+        }
       }];
     }).slice(0, 31);
   }
@@ -261,7 +259,7 @@
     style.id = 'pointOcrUxStyles';
     style.textContent = `
       .point-ocr-dialog.point-ocr-ux {
-        width: min(1120px, calc(100% - 24px));
+        width: min(1380px, calc(100% - 24px));
         max-width: none;
         max-height: calc(100dvh - 24px);
       }
@@ -302,28 +300,81 @@
         background: var(--card-solid);
       }
 
-      .point-ocr-ux details {
-        padding: 11px 13px;
-        border: 1px solid var(--line);
-        border-radius: 13px;
-        background: color-mix(in srgb, var(--card-solid) 86%, transparent);
+      .point-ocr-workspace {
+        display: grid;
+        grid-template-columns: minmax(360px, .92fr) minmax(0, 1.38fr);
+        align-items: start;
+        gap: 18px;
+        margin-top: 2px;
       }
 
-      .point-ocr-ux details summary {
-        cursor: pointer;
-        color: var(--muted);
-        font-size: .82rem;
-        font-weight: 700;
+      .point-ocr-preview-pane {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        min-width: 0;
+      }
+
+      .point-ocr-preview-card {
+        display: block;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--card-solid) 94%, transparent);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .point-ocr-preview-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 11px;
+      }
+
+      .point-ocr-preview-head strong {
+        font-size: .92rem;
+      }
+
+      .point-ocr-preview-scroll {
+        max-height: calc(100dvh - 185px);
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: #fff;
+        overscroll-behavior: contain;
       }
 
       .point-ocr-ux #pointOcrPreview {
         display: block;
         width: 100%;
-        max-height: 420px;
-        margin-top: 12px;
+        max-width: 100%;
+        height: auto;
+        max-height: calc(100dvh - 190px);
         object-fit: contain;
-        border-radius: 12px;
         background: #fff;
+      }
+
+      .point-ocr-preview-card.is-zoomed #pointOcrPreview {
+        width: auto;
+        max-width: none;
+        max-height: none;
+      }
+
+      .point-ocr-preview-hint {
+        margin: 9px 2px 0;
+        color: var(--muted);
+        font-size: .75rem;
+        line-height: 1.4;
+      }
+
+      .point-ocr-review-pane {
+        min-width: 0;
+      }
+
+      .point-ocr-month-field {
+        display: block;
+        margin-bottom: 14px;
       }
 
       .point-ocr-ux .point-ocr-review-head {
@@ -331,7 +382,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        margin-top: 4px;
+        margin-top: 2px;
       }
 
       .point-ocr-ux .point-ocr-review-head h3 {
@@ -436,7 +487,7 @@
 
       .point-ocr-row[data-state="existing"],
       .point-ocr-row[data-state="ignored"] {
-        opacity: .8;
+        opacity: .82;
         background: color-mix(in srgb, var(--bg-soft) 52%, var(--card-solid));
       }
 
@@ -464,7 +515,7 @@
 
       .point-ocr-fields {
         display: grid;
-        grid-template-columns: minmax(145px, 1.12fr) minmax(125px, .92fr) repeat(4, minmax(108px, 1fr));
+        grid-template-columns: minmax(135px, 1.25fr) minmax(115px, .9fr) repeat(4, minmax(94px, 1fr));
         gap: 9px;
         align-items: end;
       }
@@ -527,6 +578,30 @@
         padding: 0;
       }
 
+      .point-ocr-row-action {
+        min-width: 156px;
+      }
+
+      .point-ocr-row-action:disabled {
+        cursor: default;
+        opacity: .62;
+        box-shadow: none;
+      }
+
+      .point-ocr-source-details {
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--card-solid) 88%, transparent);
+      }
+
+      .point-ocr-source-details summary {
+        cursor: pointer;
+        color: var(--muted);
+        font-size: .78rem;
+        font-weight: 700;
+      }
+
       .point-ocr-source {
         margin: 8px 0 0;
         padding: 9px 10px;
@@ -571,12 +646,32 @@
       }
 
       .point-ocr-footer #pointOcrSave {
-        min-width: 270px;
+        min-width: 285px;
       }
 
-      @media (max-width: 860px) {
+      @media (max-width: 1120px) {
+        .point-ocr-workspace {
+          grid-template-columns: minmax(330px, .82fr) minmax(0, 1.18fr);
+        }
+
         .point-ocr-fields {
           grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 880px) {
+        .point-ocr-workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .point-ocr-preview-pane {
+          position: relative;
+          top: auto;
+        }
+
+        .point-ocr-preview-scroll,
+        .point-ocr-ux #pointOcrPreview {
+          max-height: 430px;
         }
       }
 
@@ -593,7 +688,8 @@
         }
 
         .point-ocr-summary,
-        .point-ocr-row-head {
+        .point-ocr-row-head,
+        .point-ocr-row-options {
           align-items: flex-start;
           flex-direction: column;
         }
@@ -607,13 +703,14 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
-        .point-ocr-footer {
-          bottom: -17px;
-        }
-
+        .point-ocr-row-action,
         .point-ocr-footer #pointOcrSave {
           width: 100%;
           min-width: 0;
+        }
+
+        .point-ocr-footer {
+          bottom: -17px;
         }
       }
 
@@ -640,6 +737,10 @@
     const fileInput = $('pointOcrFile');
     const monthInput = $('pointOcrMonth');
     const closeButton = $('pointOcrClose');
+    const previewImage = $('pointOcrPreview');
+    const previewCard = previewImage.closest('details');
+    const monthField = monthInput.closest('label');
+    const footer = saveButton.closest('.point-ocr-footer');
 
     let rows = [];
     let owner = null;
@@ -654,12 +755,11 @@
     fileInput.closest('label')?.classList.add('point-ocr-upload-field');
     selectButton.classList.add('hidden');
     selectButton.hidden = true;
-    saveButton.textContent = 'Aplicar no calendário';
 
     const intro = dialog.querySelector('.point-ocr-heading + .muted');
     if (intro) {
       intro.textContent =
-        'Envie o print e os dias serão preenchidos automaticamente. Você só precisa mexer em alguma data ou horário se a leitura estiver diferente.';
+        'Envie o print, confira os horários com a imagem fixa ao lado e adicione cada dia separadamente — ou todos de uma vez.';
     }
 
     const reviewTitle = review.querySelector('h3');
@@ -668,13 +768,63 @@
     const reviewHint = review.querySelector('.hint');
     if (reviewHint) {
       reviewHint.textContent =
-        'Os dias válidos já ficam prontos para aplicar. Fins de semana vazios e datas que já existem no histórico são ignorados automaticamente.';
+        'Cada linha tem seu próprio botão. Fins de semana vazios e datas que já existem no histórico são ignorados automaticamente.';
     }
 
     const summary = document.createElement('section');
     summary.id = 'pointOcrSummary';
     summary.className = 'point-ocr-summary';
     list.before(summary);
+
+    const workspace = document.createElement('div');
+    workspace.id = 'pointOcrWorkspace';
+    workspace.className = 'point-ocr-workspace hidden';
+
+    const previewPane = document.createElement('aside');
+    previewPane.className = 'point-ocr-preview-pane';
+    const reviewPane = document.createElement('section');
+    reviewPane.className = 'point-ocr-review-pane';
+
+    previewCard.parentNode.insertBefore(workspace, previewCard);
+    workspace.append(previewPane, reviewPane);
+    previewPane.appendChild(previewCard);
+    reviewPane.append(monthField, review, footer);
+    footer.classList.add('hidden');
+
+    previewCard.className = 'point-ocr-preview-card';
+    previewCard.open = true;
+    const oldSummary = previewCard.querySelector('summary');
+    const previewHead = document.createElement('div');
+    previewHead.className = 'point-ocr-preview-head';
+    const previewTitle = document.createElement('strong');
+    previewTitle.textContent = 'Print enviado';
+    const zoomButton = document.createElement('button');
+    zoomButton.className = 'btn secondary small';
+    zoomButton.type = 'button';
+    zoomButton.textContent = 'Ampliar';
+    previewHead.append(previewTitle, zoomButton);
+    oldSummary?.replaceWith(previewHead);
+
+    const previewScroll = document.createElement('div');
+    previewScroll.className = 'point-ocr-preview-scroll';
+    previewImage.before(previewScroll);
+    previewScroll.appendChild(previewImage);
+
+    const previewHint = document.createElement('p');
+    previewHint.className = 'point-ocr-preview-hint';
+    previewHint.textContent =
+      'O print permanece fixo enquanto você percorre os dias. Use “Ampliar” para conferir os detalhes no tamanho original.';
+    previewCard.appendChild(previewHint);
+    monthField.classList.add('point-ocr-month-field');
+
+    zoomButton.addEventListener('click', () => {
+      const zoomed = previewCard.classList.toggle('is-zoomed');
+      zoomButton.textContent = zoomed ? 'Ajustar' : 'Ampliar';
+
+      if (!zoomed) {
+        previewScroll.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      }
+    });
 
     const say = (text, error = false) => {
       status.textContent = text;
@@ -719,7 +869,7 @@
       const existing = new Set(bridge.history().map(record => record.date));
       const seen = new Set();
 
-      const states = rows.map(row => {
+      return rows.map(row => {
         if (row.kind === 'skip') {
           return {
             mode: 'ignored',
@@ -736,7 +886,7 @@
             return {
               mode: 'existing',
               tone: 'muted',
-              label: 'Já registrado',
+              label: 'Já adicionado',
               message: problem
             };
           }
@@ -756,15 +906,9 @@
           mode: 'ready',
           tone: warning ? 'warning' : 'ready',
           label: warning ? 'Vale conferir' : 'Pronto',
-          message: warning || 'Será aplicado no calendário.'
+          message: warning || 'Pronto para adicionar ao calendário.'
         };
       });
-
-      rows.forEach((row, index) => {
-        row.selected = states[index]?.mode === 'ready';
-      });
-
-      return states;
     }
 
     function stateCounts(states) {
@@ -781,8 +925,8 @@
     function renderSummary(states) {
       const counts = stateCounts(states);
       const readyLabel = counts.ready === 1
-        ? '1 dia pronto'
-        : `${counts.ready} dias prontos`;
+        ? '1 dia disponível para adicionar'
+        : `${counts.ready} dias disponíveis para adicionar`;
       const details = [];
 
       if (counts.warning) {
@@ -799,7 +943,7 @@
 
       if (counts.existing) {
         details.push(
-          `${counts.existing} já ${counts.existing === 1 ? 'existe' : 'existem'} no histórico`
+          `${counts.existing} já ${counts.existing === 1 ? 'está' : 'estão'} no calendário`
         );
       }
 
@@ -818,7 +962,7 @@
       const subtitle = document.createElement('span');
       subtitle.textContent = details.length
         ? details.join(' · ')
-        : 'Tudo certo para aplicar de uma vez.';
+        : 'Tudo que apareceu no print já foi adicionado.';
       copy.append(title, subtitle);
 
       const chips = document.createElement('div');
@@ -831,9 +975,10 @@
         chips.appendChild(chip);
       };
 
-      if (counts.ready) addChip(`${counts.ready} para aplicar`, 'ready');
+      if (counts.ready) addChip(`${counts.ready} para adicionar`, 'ready');
       if (counts.warning) addChip(`${counts.warning} conferir`, 'warning');
       if (counts.error) addChip(`${counts.error} corrigir`, 'error');
+      if (counts.existing) addChip(`${counts.existing} adicionados`, '');
 
       summary.append(copy, chips);
       return counts;
@@ -845,23 +990,73 @@
       fileInput.disabled = busy;
       monthInput.disabled = busy;
       selectButton.disabled = true;
-      saveButton.disabled = busy || counts.ready === 0 || counts.error > 0;
+      saveButton.disabled = busy || counts.ready === 0;
+
       list.querySelectorAll('input, select').forEach(control => {
         control.disabled = busy;
       });
 
+      list.querySelectorAll('.point-ocr-row-action').forEach(button => {
+        button.disabled = busy || button.dataset.ready !== 'true';
+      });
+
       if (busy) {
-        saveButton.textContent = 'Processando…';
-      } else if (counts.error) {
-        saveButton.textContent = counts.error === 1
-          ? 'Corrija 1 linha para aplicar'
-          : `Corrija ${counts.error} linhas para aplicar`;
+        saveButton.textContent = 'Salvando…';
       } else if (counts.ready === 1) {
-        saveButton.textContent = 'Aplicar 1 dia no calendário';
+        saveButton.textContent = 'Adicionar o dia pronto';
       } else if (counts.ready > 1) {
-        saveButton.textContent = `Aplicar ${counts.ready} dias no calendário`;
+        saveButton.textContent = `Adicionar todos os ${counts.ready} dias prontos`;
       } else {
-        saveButton.textContent = 'Nenhum dia novo para aplicar';
+        saveButton.textContent = 'Todos os dias já foram tratados';
+      }
+    }
+
+    async function saveRows(targetRows, successMessage) {
+      if (busy || !targetRows.length) return false;
+
+      const token = epoch;
+      busy = true;
+      controls();
+      let finalMessage = '';
+      let finalError = false;
+
+      try {
+        const id = await authorize();
+        if (token !== epoch || owner !== id) return false;
+
+        const existing = new Set(bridge.history().map(record => record.date));
+        const seen = new Set();
+
+        for (const row of targetRows) {
+          const problem = validate(row, bridge.today(), existing, seen);
+
+          if (problem) {
+            throw new Error(`${row.date || 'Data não lida'}: ${problem}`);
+          }
+
+          seen.add(row.date);
+        }
+
+        await bridge.save(targetRows, id);
+        if (token !== epoch) return false;
+
+        finalMessage = successMessage;
+        return true;
+      } catch (error) {
+        if (token === epoch) {
+          finalMessage = error.message || 'Não foi possível adicionar ao calendário.';
+          finalError = true;
+        }
+        return false;
+      } finally {
+        if (token === epoch) {
+          busy = false;
+          render();
+
+          if (finalMessage) {
+            say(finalMessage, finalError);
+          }
+        }
       }
     }
 
@@ -965,9 +1160,15 @@
 
         section.appendChild(fields);
 
+        const notice = document.createElement('p');
+        notice.className = `point-ocr-notice ${state.tone}`;
+        notice.textContent = state.message;
+        section.appendChild(notice);
+
+        const options = document.createElement('div');
+        options.className = 'point-ocr-row-options';
+
         if (row.kind === 'work') {
-          const options = document.createElement('div');
-          options.className = 'point-ocr-row-options';
           const noLunchLabel = document.createElement('label');
           noLunchLabel.className = 'point-ocr-no-lunch';
           const noLunch = document.createElement('input');
@@ -980,15 +1181,37 @@
           });
           noLunchLabel.append(noLunch, document.createTextNode('Dia sem intervalo'));
           options.appendChild(noLunchLabel);
-          section.appendChild(options);
+        } else {
+          const spacer = document.createElement('span');
+          spacer.setAttribute('aria-hidden', 'true');
+          options.appendChild(spacer);
         }
 
-        const notice = document.createElement('p');
-        notice.className = `point-ocr-notice ${state.tone}`;
-        notice.textContent = state.message;
-        section.appendChild(notice);
+        const addButton = document.createElement('button');
+        addButton.type = 'button';
+        addButton.className = `btn ${state.mode === 'ready' ? 'primary' : 'secondary'} small point-ocr-row-action`;
+        addButton.dataset.ready = String(state.mode === 'ready');
+
+        if (state.mode === 'ready') {
+          addButton.textContent = 'Adicionar este dia';
+          addButton.addEventListener('click', () => saveRows(
+            [row],
+            `${formatRowDate(row)} foi adicionado ao calendário.`
+          ));
+        } else if (state.mode === 'existing') {
+          addButton.textContent = 'Já adicionado';
+        } else if (state.mode === 'ignored') {
+          addButton.textContent = 'Não será adicionado';
+        } else {
+          addButton.textContent = 'Corrija para adicionar';
+        }
+
+        addButton.disabled = busy || state.mode !== 'ready';
+        options.appendChild(addButton);
+        section.appendChild(options);
 
         const sourceDetails = document.createElement('details');
+        sourceDetails.className = 'point-ocr-source-details';
         const sourceSummary = document.createElement('summary');
         sourceSummary.textContent = 'Ver texto lido nesta linha';
         const source = document.createElement('p');
@@ -1000,20 +1223,25 @@
         list.appendChild(section);
       });
 
+      workspace.classList.toggle('hidden', !previewUrl);
       review.hidden = rows.length === 0;
+      footer.classList.toggle('hidden', rows.length === 0);
       controls(states);
 
       if (!busy && rows.length) {
-        if (counts.error) {
+        if (counts.ready) {
+          const extra = counts.error
+            ? ` ${counts.error} ${counts.error === 1 ? 'linha ainda precisa' : 'linhas ainda precisam'} de ajuste.`
+            : '';
           say(
-            `${counts.ready} ${counts.ready === 1 ? 'dia está pronto' : 'dias estão prontos'}, mas ${counts.error} ${counts.error === 1 ? 'linha precisa' : 'linhas precisam'} de ajuste.`
+            `${counts.ready} ${counts.ready === 1 ? 'dia está pronto' : 'dias estão prontos'} para adicionar.${extra}`
           );
-        } else if (counts.ready) {
+        } else if (counts.error) {
           say(
-            `${counts.ready} ${counts.ready === 1 ? 'dia reconhecido e pronto' : 'dias reconhecidos e prontos'}. Edite somente se algo estiver diferente do print.`
+            `${counts.error} ${counts.error === 1 ? 'linha precisa' : 'linhas precisam'} de ajuste antes de adicionar.`
           );
         } else {
-          say('Não há dias novos para aplicar neste print.');
+          say('Todos os dias válidos deste print já estão no calendário.');
         }
       }
     }
@@ -1032,11 +1260,15 @@
 
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       previewUrl = null;
-      $('pointOcrPreview').removeAttribute('src');
-      $('pointOcrPreview').hidden = true;
+      previewImage.removeAttribute('src');
+      previewImage.hidden = true;
+      previewCard.classList.remove('is-zoomed');
+      zoomButton.textContent = 'Ampliar';
       fileInput.value = '';
       monthInput.value = '';
+      workspace.classList.add('hidden');
       review.hidden = true;
+      footer.classList.add('hidden');
       busy = false;
       say('');
       controls([]);
@@ -1144,7 +1376,7 @@
             if (x > 0) near.push(index - 1);
             if (x + 1 < small.width) near.push(index + 1);
             if (y > 0) near.push(index - small.width);
-            if (y + 1 < small.width) near.push(index + small.width);
+            if (y + 1 < small.height) near.push(index + small.width);
 
             for (const neighbour of near) {
               if (!visited[neighbour] && blue(neighbour)) {
@@ -1206,6 +1438,8 @@
       list.replaceChildren();
       summary.replaceChildren();
       review.hidden = true;
+      footer.classList.add('hidden');
+      workspace.classList.add('hidden');
       controls([]);
 
       let localWorker = null;
@@ -1239,8 +1473,9 @@
 
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         previewUrl = URL.createObjectURL(file);
-        $('pointOcrPreview').src = previewUrl;
-        $('pointOcrPreview').hidden = false;
+        previewImage.src = previewUrl;
+        previewImage.hidden = false;
+        workspace.classList.remove('hidden');
 
         await loadLibrary();
         if (token !== epoch) return;
@@ -1418,71 +1653,19 @@
       render();
     });
 
-    saveButton.addEventListener('click', async () => {
-      if (busy) return;
+    saveButton.addEventListener('click', () => {
+      const states = buildStates();
+      const readyRows = rows.filter((row, index) => states[index].mode === 'ready');
 
-      const token = epoch;
-      busy = true;
-      let completed = false;
-      controls();
-
-      try {
-        const id = await authorize();
-        if (token !== epoch || owner !== id) return;
-
-        const states = buildStates();
-        const counts = stateCounts(states);
-
-        if (counts.error) {
-          throw new Error(
-            counts.error === 1
-              ? 'Corrija a linha marcada antes de aplicar.'
-              : `Corrija as ${counts.error} linhas marcadas antes de aplicar.`
-          );
-        }
-
-        const selected = rows.filter((row, index) => states[index].mode === 'ready');
-
-        if (!selected.length) {
-          throw new Error('Não há nenhum dia novo pronto para aplicar.');
-        }
-
-        const seen = new Set();
-        const existing = new Set(bridge.history().map(record => record.date));
-
-        for (const row of selected) {
-          const problem = validate(row, bridge.today(), existing, seen);
-
-          if (problem) {
-            throw new Error(`${row.date || 'Data não lida'}: ${problem}`);
-          }
-
-          seen.add(row.date);
-        }
-
-        await bridge.save(selected, id);
-        if (token !== epoch) return;
-
-        completed = true;
-        say(
-          `${selected.length} ${selected.length === 1 ? 'dia aplicado' : 'dias aplicados'} no calendário. Abrindo o histórico…`
-        );
-
-        await new Promise(resolve => setTimeout(resolve, 550));
-        if (token !== epoch) return;
-
-        reset();
-        document.getElementById('tabHistory')?.click();
-      } catch (error) {
-        if (token === epoch) {
-          say(error.message || 'Não foi possível aplicar os dias.', true);
-        }
-      } finally {
-        if (!completed && token === epoch) {
-          busy = false;
-          render();
-        }
+      if (!readyRows.length) {
+        say('Não há nenhum dia novo pronto para adicionar.', true);
+        return;
       }
+
+      saveRows(
+        readyRows,
+        `${readyRows.length} ${readyRows.length === 1 ? 'dia foi adicionado' : 'dias foram adicionados'} ao calendário.`
+      );
     });
 
     return { refresh, reset };
