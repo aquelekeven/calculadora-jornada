@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
 
-  const RELEASE_TO_ALL = false; // Change only after the private beta is approved.
+  const RELEASE_TO_ALL = true; // Public release for every authenticated user.
   const BETA_USER = 'b1fce5d4-9817-4795-ac91-ee731c8f149b';
   const MONTHS = [
     'janeiro',
@@ -737,6 +737,7 @@
     const fileInput = $('pointOcrFile');
     const monthInput = $('pointOcrMonth');
     const closeButton = $('pointOcrClose');
+    const openButton = $('pointOcrOpen');
     const previewImage = $('pointOcrPreview');
     const previewCard = previewImage.closest('details');
     const monthField = monthInput.closest('label');
@@ -755,6 +756,22 @@
     fileInput.closest('label')?.classList.add('point-ocr-upload-field');
     selectButton.classList.add('hidden');
     selectButton.hidden = true;
+
+    const cardEyebrow = card.querySelector('.eyebrow');
+    const cardTitle = card.querySelector('h2');
+    const cardDescription = card.querySelector('.section-description');
+    const dialogEyebrow = dialog.querySelector('.point-ocr-heading .eyebrow');
+    const dialogTitle = $('pointOcrTitle');
+
+    if (cardEyebrow) cardEyebrow.textContent = 'Portal SAP · Importação de ponto';
+    if (cardTitle) cardTitle.textContent = 'Importe suas marcações do Portal SAP';
+    if (cardDescription) {
+      cardDescription.textContent =
+        'Envie um print do Portal SAP, confira os horários e adicione os dias ao calendário. A imagem é processada neste dispositivo.';
+    }
+    if (openButton) openButton.textContent = 'Enviar print do Portal SAP';
+    if (dialogEyebrow) dialogEyebrow.textContent = 'Portal SAP';
+    if (dialogTitle) dialogTitle.textContent = 'Importar print do Portal SAP';
 
     const intro = dialog.querySelector('.point-ocr-heading + .muted');
     if (intro) {
@@ -838,7 +855,7 @@
       const id = bridge.userId();
 
       if (!eligible(id)) {
-        throw new Error('Esta função está em teste restrito.');
+        throw new Error('Esta função está indisponível para esta conta.');
       }
 
       const user = await bridge.verifyUser();
@@ -1291,7 +1308,7 @@
           card.classList.remove('hidden');
         }
       } catch {
-        // Fail closed during the private beta.
+        // Keep the feature hidden when session verification fails.
       }
     }
 
@@ -1610,7 +1627,7 @@
       }
     }
 
-    $('pointOcrOpen').addEventListener('click', async () => {
+    openButton.addEventListener('click', async () => {
       try {
         await authorize();
         if (!allowed()) return;
