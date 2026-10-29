@@ -1,4 +1,4 @@
-const CACHE = "jornada-fb-static-v2-13-sap-public";
+const CACHE = "jornada-fb-static-v2-14-leave-statuses";
 const SCOPE = self.registration.scope;
 const PRECACHE = [
   "./",
@@ -6,6 +6,7 @@ const PRECACHE = [
   "./styles.css?v=2.10-ocr-beta",
   "./app.js?v=2.10-ocr-beta",
   "./point-ocr.js?v=2.13-sap-public",
+  "./leave-statuses.js?v=2.14-leave-statuses",
   "./theme-bootstrap.js",
   "./manifest.webmanifest",
   "./icone-192.png",
