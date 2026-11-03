@@ -7,18 +7,30 @@ window.JFB_CONFIG = {
   googleClientId: "137434218670-n29h1tesqkc21oa1h8asrunivglbj8c7.apps.googleusercontent.com"
 };
 
-(function loadLeaveStatusesAddon() {
-  const load = () => {
-    if (document.querySelector('script[data-jfb-leave-statuses]')) return;
+(function loadAppAddons() {
+  const loadAddon = ({ src, dataAttribute, warning }) => {
+    if (document.querySelector(`script[${dataAttribute}]`)) return;
 
     const script = document.createElement('script');
-    script.src = './leave-statuses.js?v=2.14-leave-statuses';
-    script.dataset.jfbLeaveStatuses = 'true';
+    script.src = src;
+    script.setAttribute(dataAttribute, 'true');
     script.async = true;
-    script.onerror = () => {
-      console.warn('Não foi possível carregar o módulo de férias e folgas.');
-    };
+    script.onerror = () => console.warn(warning);
     document.head.appendChild(script);
+  };
+
+  const load = () => {
+    loadAddon({
+      src: './leave-statuses.js?v=2.14-leave-statuses',
+      dataAttribute: 'data-jfb-leave-statuses',
+      warning: 'Não foi possível carregar o módulo de férias e folgas.'
+    });
+
+    loadAddon({
+      src: './today-query-history.js?v=2.15-today-history',
+      dataAttribute: 'data-jfb-today-query-history',
+      warning: 'Não foi possível carregar o histórico diário de consultas.'
+    });
   };
 
   if (document.readyState === 'complete') {
